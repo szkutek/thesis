@@ -22,15 +22,24 @@ def create_GeneralInfo_table(db):
             (gmina, powiat, voivodship, population))
         db.commit()
 
+    cursor.close()
+
+
+def print_GeneralInfo_table(db):
+    cursor = db.cursor()
     cursor.execute('SELECT * FROM GeneralInfo')
 
     a = cursor.fetchall()
     pprint(a)
-
-    db.close()
+    cursor.close()
 
 
 if __name__ == '__main__':
     # # connect to sqlite
     db = sqlite3.connect('gminas.db')
-    create_GeneralInfo_table(db)
+
+    # create_GeneralInfo_table(db)
+
+    print_GeneralInfo_table(db)
+
+    db.close()
