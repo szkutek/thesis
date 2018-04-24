@@ -37,7 +37,6 @@ def create_df_powiats(df_terc):
     df_names.rename(columns={'NAZWA': 'name'}, inplace=True)
 
     df = pd.merge(df_names, df_shp, on='teryt')
-    # df.to_csv('../data/powiats.csv', sep='\t', encoding='utf-8', index=False)
     df = gpd.GeoDataFrame(df, geometry='geometry')
     df.to_file('../data/powiats.shp', driver='ESRI Shapefile', encoding='utf-8')
 
@@ -58,43 +57,38 @@ def create_df_gminas(df_terc):
     df_names.rename(columns={'NAZWA': 'name'}, inplace=True)
 
     df = pd.merge(df_names, df_shp, on='teryt')
-    # df.to_csv('../data/gminas.csv', sep='\t', encoding='utf-8', index=False)
     df = gpd.GeoDataFrame(df, geometry='geometry')
     df.to_file('../data/gminas.shp', driver='ESRI Shapefile', encoding='utf-8')
 
 
-def create_df_geometry(type):
+def create_shp(type):
     terc_link = '../data/TERC_Urzedowy_2018-04-17/TERC_Urzedowy_2018-04-17.csv'
     df_terc = pd.read_csv(terc_link, sep=';', dtype={'WOJ': str, 'POW': str, 'GMI': str, 'RODZ': str})
 
-    if type == 'voiv':
+    if type == 'voivodeships':
         create_df_voivodeships(df_terc)
-    elif type == 'pow':
+    elif type == 'powiats':
         create_df_powiats(df_terc)
-    elif type == 'gmi':
+    elif type == 'gminas':
         create_df_gminas(df_terc)
 
 
-def read_df_voivodeships(type_name):
-    df = gpd.read_file('../data/' + type_name + '.shp', encoding='utf-8')
-    # teryt, name, geometry
-    # print(df)
+def save_neighbours_to_json(type):
+    df = gpd.read_file('../data/' + type + '.shp', encoding='utf-8')
     df = gpd.GeoDataFrame(df, geometry='geometry')
-    # df=df.head()
-    # neighbours = df.loc[:, ('teryt', 'name')]
     neighbours = {}
     for i1, r1 in df.iterrows():
         nbrs = set()
         for i2, r2 in df.iterrows():
-            if shapely.geometry.shape(r1['geometry']).touches(r2['geometry']):
+            try:
+                if i1 != i2 and shapely.geometry.shape(r1['geometry']).touches(r2['geometry']):
+                    nbrs.add(r2['teryt'])
+            except:
+                print(r1['name'], r2['name'])
                 nbrs.add(r2['teryt'])
         neighbours[r1['teryt']] = list(nbrs)
-    json.dump(neighbours, open('../data/' + type_name + '_neighbours.json', 'w'))
+    json.dump(neighbours, open('../data/' + type + '_neighbours.json', 'w'))
 
-
-# print(shp['jpt_nazwa_'])
-# print(shp['jpt_kod_je'])
-# print(shp.head())
 
 # f, ax = plt.subplots(1)
 # ax = shp.plot(ax=ax)
@@ -109,5 +103,10 @@ def read_df_voivodeships(type_name):
 
 if __name__ == '__main__':
     # check which polygons are neighbours -> shapely.geometry.shape(poly1).touches(poly2)
-    # create_df_geometry('voiv')
-    read_df_voivodeships('voivodeships')
+
+    type = 'gminas'
+    # create_shp(type)
+    # save_neighbours_to_json(type)
+    with open('../data/' + type + '_neighbours.json') as file:
+        nbrs = json.load(file)
+        print(list(nbrs.items())[:5])
