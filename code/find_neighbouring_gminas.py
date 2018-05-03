@@ -4,8 +4,22 @@ import shapely.geometry
 import json
 
 
+def add_centerpoint(df):
+    """Add centerpoint do DataFrame and set index on teryt number"""
+    # coordinates of representative points of Polygons
+    # we can use obj.representative_point() or obj.centroid
+    centerpoints = df.apply(lambda r: r['geometry'].representative_point(), axis=1)
+    centerpoints_x = centerpoints.apply(lambda r: r.x)
+    centerpoints_y = centerpoints.apply(lambda r: r.y)
+
+    df.loc[:, 'pt_x'] = centerpoints_x
+    df.loc[:, 'pt_y'] = centerpoints_y
+
+    return df
+
+
 def create_df_voivodeships(df_terc):
-    shp_link = '../data/PRG_jednostki_administracyjne_v22/wojewodztwa.shp'
+    shp_link = '../data/PRG_jednostki_administracyjne_v22/województwa.shp'
     shp = gpd.read_file(shp_link)
     df_shp = pd.DataFrame(shp, columns=['jpt_kod_je', 'geometry'])
     df_shp.rename(columns={'jpt_kod_je': 'teryt'}, inplace=True)
@@ -16,8 +30,10 @@ def create_df_voivodeships(df_terc):
     df_names['name'] = df_names['name'].map(lambda x: x.lower())
 
     df = pd.merge(df_names, df_shp, on='teryt')
-    # df.to_csv('../data/voivodeships.csv', sep='\t', encoding='utf-8', index=False)
     df = gpd.GeoDataFrame(df, geometry='geometry')
+
+    df = add_centerpoint(df)
+    print(df)
     df.to_file('../data/voivodeships.shp', driver='ESRI Shapefile', encoding='utf-8')
 
 
@@ -38,6 +54,8 @@ def create_df_powiats(df_terc):
 
     df = pd.merge(df_names, df_shp, on='teryt')
     df = gpd.GeoDataFrame(df, geometry='geometry')
+
+    df = add_centerpoint(df)
     df.to_file('../data/powiats.shp', driver='ESRI Shapefile', encoding='utf-8')
 
 
@@ -58,6 +76,9 @@ def create_df_gminas(df_terc):
 
     df = pd.merge(df_names, df_shp, on='teryt')
     df = gpd.GeoDataFrame(df, geometry='geometry')
+
+    df = add_centerpoint(df)
+    print(df.head())
     df.to_file('../data/gminas.shp', driver='ESRI Shapefile', encoding='utf-8')
 
 
@@ -105,8 +126,9 @@ if __name__ == '__main__':
     # check which polygons are neighbours -> shapely.geometry.shape(poly1).touches(poly2)
 
     type = 'gminas'
-    # create_shp(type)
+    # type = 'voivodeships'
+    create_shp(type)
     # save_neighbours_to_json(type)
-    with open('../data/' + type + '_neighbours.json') as file:
-        nbrs = json.load(file)
-        print(list(nbrs.items())[:5])
+    # with open('../data/' + type + '_neighbours.json') as file:
+    #     nbrs = json.load(file)
+    #     print(list(nbrs.items())[:5])
