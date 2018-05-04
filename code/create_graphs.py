@@ -9,7 +9,7 @@ def plot_with_folium(pos):
     """pos = {name: [lat, lng]}"""
     import folium
     m = folium.Map(location=[51.9194, 19.1451], zoom_start=6, tiles='cartodbpositron')
-    for k, pt in pos:
+    for k, pt in pos.items():
         folium.Marker(location=pt, popup=k).add_to(m)
     m.save('_map.html')
 
@@ -25,8 +25,7 @@ def read_files(type):
 
 
 def create_pos(df):
-    pts = df.loc[:, ('pt_x', 'pt_y')].apply(tuple, axis=1)
-    # pts = list(zip(df['centerpoint_x'], df['centerpoint_y']))
+    pts = df.loc[:, ('pt_y', 'pt_x')].apply(tuple, axis=1)
     pos = dict(zip(df['teryt'], pts))
     df.loc[:, 'coord'] = pts
     return pos
@@ -74,7 +73,7 @@ def save_graph(G, node_labels=False, edge_labels=False):
         nx.draw_networkx_labels(G, pos=pos, label_pos=0.5)
     if edge_labels:
         nx.draw_networkx_edge_labels(G, pos=pos, label_pos=0.5)
-    plt.savefig('../data/graph_' + type + '.png')
+    plt.savefig('../data/graphs/graph_' + type + '.png')
     plt.show()
 
 
