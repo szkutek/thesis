@@ -111,22 +111,12 @@ def save_neighbours_to_json(type):
     json.dump(neighbours, open('../data/' + type + '_neighbours.json', 'w'))
 
 
-# f, ax = plt.subplots(1)
-# ax = shp.plot(ax=ax)
-# ax.set_axis_off()
-# plt.show()
-
-# Plot one Polygon
-# poly = shp.loc[0, 'geometry']
-# x,y = poly.exterior.xy
-# plt.plot(x,y)
-
-
 if __name__ == '__main__':
     # check which polygons are neighbours -> shapely.geometry.shape(poly1).touches(poly2)
 
     type = 'gminas'
     # type = 'voivodeships'
+    # TODO manually add neighbours for the gminas that are not connected to the cluster
     create_shp(type)
     # save_neighbours_to_json(type)
     # with open('../data/' + type + '_neighbours.json') as file:

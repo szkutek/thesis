@@ -74,10 +74,17 @@ def create_airports_graph(pos):
     return airports
 
 
+def flights_network():
+    df = read_airports()
+    pos = create_pos_for_nx(df)
+    G = create_airports_graph(pos)
+    return G, pos
+
+
 if __name__ == '__main__':
     df = read_airports()
     print(df)
     pos = create_pos_for_nx(df)
-    airports = create_airports_graph(pos)
-    save_graph(airports, True, True)
+    G = create_airports_graph(pos)
+    save_graph(G, True, True)
     plot_with_folium(pos)

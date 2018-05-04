@@ -25,7 +25,8 @@ def read_files(type):
 
 
 def create_pos(df):
-    pts = df.loc[:, ('pt_y', 'pt_x')].apply(tuple, axis=1)
+    # pts = df.loc[:, ('pt_y', 'pt_x')].apply(tuple, axis=1)
+    pts = df.loc[:, ('pt_y', 'pt_x')].apply(lambda r: (r['pt_x'] / 10000, r['pt_y'] / 10000), axis=1)
     pos = dict(zip(df['teryt'], pts))
     df.loc[:, 'coord'] = pts
     return pos
@@ -77,6 +78,24 @@ def save_graph(G, node_labels=False, edge_labels=False):
     plt.show()
 
 
+def create_gminas_graph(pos, nbrs):
+    G = nx.DiGraph()
+    G.add_nodes_from(pos.keys())
+    nbrs = sum([list(map(lambda el: (k, el), v)) for k, v in nbrs.items()], [])  # list of tuples
+    G.add_edges_from(nbrs)
+    add_work_migration(G)
+    return G
+
+
+def gminas_network():
+    # type = 'gminas'
+    type = 'voivodeships'
+    df, nbrs = read_files(type)
+    pos = create_pos(df)  # {node: (pt_y, pt_x)}
+    G = create_gminas_graph(pos, nbrs)
+    return G, pos
+
+
 if __name__ == '__main__':
     # type = 'gminas'
     type = 'voivodeships'
@@ -84,11 +103,5 @@ if __name__ == '__main__':
     df.plot(alpha=0.3)
     # plt.show()
     pos = create_pos(df)  # {node: (pt_x, pt_y)} (coordinates)
-
-    G = nx.DiGraph()
-    G.add_nodes_from(pos.keys())
-    nbrs = sum([list(map(lambda el: (k, el), v)) for k, v in nbrs.items()], [])  # list of tuples
-    G.add_edges_from(nbrs)
-
-    add_work_migration(G)
+    G = create_gminas_graph(pos, nbrs)
     save_graph(G, True, True)
