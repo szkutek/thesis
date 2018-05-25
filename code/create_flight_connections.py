@@ -31,7 +31,7 @@ def read_airports():
     return table
 
 
-def create_pos_for_nx(df):
+def create_pos_for_shp(df):
     pts = df.loc[:, ('coord_y', 'coord_x')].apply(tuple, axis=1)
     # # for folium replace y and x:
     # pts = df.loc[:, ('coord_x', 'coord_y')].apply(tuple, axis=1)
@@ -76,7 +76,7 @@ def create_airports_graph(pos):
 
 def flights_network():
     df = read_airports()
-    pos = create_pos_for_nx(df)
+    pos = create_pos_for_shp(df)
     G = create_airports_graph(pos)
     return G, pos
 
@@ -84,7 +84,7 @@ def flights_network():
 if __name__ == '__main__':
     df = read_airports()
     print(df)
-    pos = create_pos_for_nx(df)
+    pos = create_pos_for_shp(df)
     G = create_airports_graph(pos)
     save_graph(G, True, True)
     plot_with_folium(pos)

@@ -1,7 +1,8 @@
-import create_graphs
-import create_flight_connections
-import networkx as nx
 import matplotlib.pyplot as plt
+import networkx as nx
+
+import create_flight_connections
+import create_graphs
 
 
 def plot_network(G1, G2, pos1, pos2, node_labels=False, edge_labels=False):

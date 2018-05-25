@@ -1,7 +1,14 @@
+import json
+import subprocess
+
 import geopandas as gpd
 import pandas as pd
 import shapely.geometry
-import json
+from os import path
+
+from pykml import parser
+
+pathfile = '../data/simplified_geometry/'
 
 
 def add_centerpoint(df):
@@ -18,22 +25,31 @@ def add_centerpoint(df):
     return df
 
 
-def create_df_voivodeships(df_terc):
-    shp_link = '../data/PRG_jednostki_administracyjne_v22/województwa.shp'
-    shp = gpd.read_file(shp_link)
-    df_shp = pd.DataFrame(shp, columns=['jpt_kod_je', 'geometry'])
-    df_shp.rename(columns={'jpt_kod_je': 'teryt'}, inplace=True)
-
-    cond = df_terc['POW'].isnull()
-    df_names = pd.DataFrame(df_terc[cond], columns=['WOJ', 'NAZWA'])
-    df_names.rename(columns={'WOJ': 'teryt', 'NAZWA': 'name'}, inplace=True)
-    df_names['name'] = df_names['name'].map(lambda x: x.lower())
-
-    df = pd.merge(df_names, df_shp, on='teryt')
+def convert_to_kml_coords():
+    path = '../data/simplified_geometry/shp/'
+    df = gpd.read_file(path + 'gminy.shp', encoding='windows-1250')
     df = gpd.GeoDataFrame(df, geometry='geometry')
+    print(df.head())
+
+    subprocess.call("ogr2ogr -f KML " + path + 'gminy.kml ' + path + 'gminas.shp', shell=True)
+
+
+def create_df_voivodeships(df_terc):
+    shp_link = pathfile + 'shp/wojewodztwa.shp'
+    shp = gpd.read_file(shp_link, encoding='windows-1250')
+    df = pd.DataFrame(shp, columns=['jpt_kod_je', 'jpt_nazwa_', 'geometry'])
+    df.rename(columns={'jpt_kod_je': 'teryt', 'jpt_nazwa_': 'name'}, inplace=True)
+
+    # cond = df_terc['POW'].isnull()
+    # df_names = pd.DataFrame(df_terc[cond], columns=['WOJ', 'NAZWA'])
+    # df_names.rename(columns={'WOJ': 'teryt', 'NAZWA': 'name'}, inplace=True)
+    # df_names['name'] = df_names['name'].map(lambda x: x.lower())
+    #
+    # df = pd.merge(df_names, df_shp, on='teryt')
+    df = gpd.GeoDataFrame(df, geometry='geometry')
+    # df.to_file(pathfile + 'shp/voivodeships.shp', driver='ESRI Shapefile', encoding='utf-8')
 
     df = add_centerpoint(df)
-    print(df)
     df.to_file('../data/voivodeships.shp', driver='ESRI Shapefile', encoding='utf-8')
 
 
@@ -115,7 +131,7 @@ if __name__ == '__main__':
     # check which polygons are neighbours -> shapely.geometry.shape(poly1).touches(poly2)
 
     type = 'gminas'
-    # type = 'voivodeships'
+    type = 'voivodeships'
     # TODO manually add neighbours for the gminas that are not connected to the cluster
     create_shp(type)
     # save_neighbours_to_json(type)

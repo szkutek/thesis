@@ -25,8 +25,7 @@ def read_files(type):
 
 
 def create_pos(df):
-    # pts = df.loc[:, ('pt_y', 'pt_x')].apply(tuple, axis=1)
-    pts = df.loc[:, ('pt_y', 'pt_x')].apply(lambda r: (r['pt_x'] / 10000, r['pt_y'] / 10000), axis=1)
+    pts = df.loc[:, ('pt_x', 'pt_y')].apply(tuple, axis=1)
     pos = dict(zip(df['teryt'], pts))
     df.loc[:, 'coord'] = pts
     return pos
@@ -45,7 +44,7 @@ def plot_pos(pos):
 
 def add_work_migration(G):
     """adding weights to edges
-    if edge doesn't exits -> find shortest path and accumulate weights"""
+    if edge doesn't exits -> find shortest pathfile and accumulate weights"""
     work_migration = pd.read_csv('../data/l_macierz_2014_03_18.csv', delimiter=';', dtype={0: str, 1: str})
     work_migration = work_migration.loc[:, work_migration.columns[:3]]
     migration = []
@@ -62,7 +61,7 @@ def add_work_migration(G):
     for e1, e2, w in migration:
         p = path[e1][e2]  # [e1, e2, e3, ..., en]
         pairs = list(zip(p[:-1], p[1:]))  # [(e1, e2), (e2, e3), ...]
-        for p1, p2 in pairs:  # add work migration to edges in path p
+        for p1, p2 in pairs:  # add work migration to edges in pathfile p
             set_work_migration(G, p1, p2, w)
 
 
