@@ -13,19 +13,19 @@ def f1(y, t, beta, mu):  # SIR model
     Ii = y[1]  # infected
     Ri = y[2]  # recovered
     # TODO modify to work on graph
-    f0 = -beta * Si * Ii
-    f1 = beta * Si * Ii - mu * Ii
-    f2 = mu * Ii
-    return [f0, f1, f2]
+    dS_dt = -beta * Si * Ii
+    dI_dt = beta * Si * Ii - mu * Ii
+    dR_dt = mu * Ii
+    return [dS_dt, dI_dt, dR_dt]
 
 
 def f2(y, t, beta, mu):  # SIS model
     Si = y[0]  # susceptible
     Ii = y[1]  # infected
 
-    f0 = -beta * Si * Ii
-    f1 = beta * Si * Ii - mu * Ii
-    return [f0, f1]
+    dS_dt = -beta * Si * Ii
+    dI_dt = beta * Si * Ii
+    return [dS_dt, dI_dt]
 
 
 def plot_change_in_population(t, S, I, R=None):
@@ -45,40 +45,39 @@ def plot_change_in_population(t, S, I, R=None):
     plt.show()
 
 
-# def model_SIR(N=100, Bs=list(0.03), rs=list(1.), I0=1):
-def model_SIR(N, beta, mu, I0):
+def sir_on_node(g, node, t, beta, mu, i0=0):
     # beta = 0.03  # infectivity
-    # mu = 1  # recovery rate
+    # mu = 1.  # recovery rate
+    N = g.nodes[node]['population']
     R0 = beta * N / mu  # basic reproductive ratio
     print(R0)
-    # # disease free state S0 = N, I0 = 0, R0 = 0
+    # # disease free state s0 = N, i0 = 0, R0 = 0
 
     # initial conditions
-    I0 = 1
-    S0 = N - I0  # initial population
-    t = np.linspace(0, 10., 1000)  # time grid
+    s0 = N - i0  # initial number of susceptible individuals
 
     # # solve the DEs
-    y0 = [S0, I0, R0]  # initial condition vector
+    y0 = [s0, i0, 0]  # initial condition vector
     soln = odeint(f1, y0, t, args=(beta, mu))
-    # S = [S0] + soln[:, 0]
-    # I = [I0] + soln[:, 1]
+    # S = [s0] + soln[:, 0]
+    # I = [i0] + soln[:, 1]
     # R = [R0] + soln[:, 2]
-    S = soln[:, 0]
-    I = soln[:, 1]
-    R = soln[:, 2]
-    # plot_change_in_population(t, S, I, R)
-    return S, I, R
+    s = soln[:, 0]
+    i = soln[:, 1]
+    r = soln[:, 2]
+
+    # nx.set_node_attributes(g, {node: s}, 'S')
+    # nx.set_node_attributes(g, {node: i}, 'I')
+    # nx.set_node_attributes(g, {node: r}, 'R')
+    return s, i, r
 
 
-# def model_SI(N=100, Bs=list(0.03), rs=list(1.), I0=1):
-def model_SI(N, beta, mu, I0):
+def model_SI(N, t, beta, mu, I0):
     # beta = 0.03  # infectivity
-    # mu = 1  # recovery rate
+    # mu = 1.  # recovery rate
 
     # initial conditions
     S0 = N - I0  # initial population
-    t = np.linspace(0, 10., 1000)  # time grid
 
     # # solve the DEs
     y0 = [S0, I0]  # initial condition vector
@@ -89,101 +88,92 @@ def model_SI(N, beta, mu, I0):
     return S, I
 
 
-def SIR_graph(G, prob=0.5, save=False, pathname='graph_walk', starting=None):
-    Susceptible = list(G.nodes())
-    if starting is None:
-        start = Susceptible[rnd.randint(0, len(Susceptible) - 1)]
-    else:
-        # start = starting
-        start = Susceptible[0]
+def agent_sir_on_network():
+    def SIR_graph(G, prob=0.5, save=False, pathname='graph_walk', starting=None):
+        Susceptible = list(G.nodes())
+        if starting is None:
+            start = Susceptible[rnd.randint(0, len(Susceptible) - 1)]
+        else:
+            # start = starting
+            start = Susceptible[0]
 
-    Infected_now = [start]
-    Susceptible.remove(start)
+        Infected_now = [start]
+        Susceptible.remove(start)
 
-    Infected_next = []
-    Removed = []
-
-    SIR = {'S': [Susceptible], 'I': [Infected_now], 'R': [Removed]}
-
-    if save:
-        fig = pylab.figure(figsize=(15, 10))
-        pos = nx.spring_layout(G)
-        size = 300
-
-        nx.draw_networkx_nodes(G, pos, nodelist=Susceptible, node_color='g', node_size=size, alpha=0.8)
-        nx.draw_networkx_nodes(G, pos, nodelist=Infected_now, node_color='y', node_size=size, alpha=0.8)
-        nx.draw_networkx_edges(G, pos, width=1.0, alpha=0.5)
-
-        nx.draw_networkx_labels(G, pos, labels=nx.get_node_attributes(G, 'population'))
-        # nx.draw_networkx_edge_labels(G, pos, label_pos=.75)
-
-        pylab.savefig(pathname + '_0.png')
-        pylab.clf()
-
-    i = 1
-    while Infected_now:
-        for u in Infected_now:
-            for v in G.neighbors(u):
-                if rnd.random() < prob and v in Susceptible:
-                    Infected_next.append(v)
-                    Susceptible.remove(v)
-
-            Removed.append(u)
-
-        Infected_now = Infected_next
         Infected_next = []
+        Removed = []
+
+        SIR = {'S': [Susceptible], 'I': [Infected_now], 'R': [Removed]}
 
         if save:
+            fig = pylab.figure(figsize=(15, 10))
+            pos = nx.spring_layout(G)
+            size = 300
+
             nx.draw_networkx_nodes(G, pos, nodelist=Susceptible, node_color='g', node_size=size, alpha=0.8)
             nx.draw_networkx_nodes(G, pos, nodelist=Infected_now, node_color='y', node_size=size, alpha=0.8)
-            nx.draw_networkx_nodes(G, pos, nodelist=Removed, node_color='grey', node_size=size, alpha=0.8)
-
             nx.draw_networkx_edges(G, pos, width=1.0, alpha=0.5)
+
             nx.draw_networkx_labels(G, pos, labels=nx.get_node_attributes(G, 'population'))
             # nx.draw_networkx_edge_labels(G, pos, label_pos=.75)
 
-            s = pathname + "_" + str(i) + ".png"
-            pylab.savefig(s)
+            pylab.savefig(pathname + '_0.png')
             pylab.clf()
 
-        SIR['S'].append(Susceptible)
-        SIR['I'].append(Infected_now)
-        SIR['R'].append(Removed)
+        i = 1
+        while Infected_now:
+            for u in Infected_now:
+                for v in G.neighbors(u):
+                    if rnd.random() < prob and v in Susceptible:
+                        Infected_next.append(v)
+                        Susceptible.remove(v)
 
-        i += 1
+                Removed.append(u)
 
-    if save:
-        pylab.close(fig)
-    return SIR
+            Infected_now = Infected_next
+            Infected_next = []
 
+            if save:
+                nx.draw_networkx_nodes(G, pos, nodelist=Susceptible, node_color='g', node_size=size, alpha=0.8)
+                nx.draw_networkx_nodes(G, pos, nodelist=Infected_now, node_color='y', node_size=size, alpha=0.8)
+                nx.draw_networkx_nodes(G, pos, nodelist=Removed, node_color='grey', node_size=size, alpha=0.8)
 
-def movie(n, pathname, moviename, duration=0.2):
-    frames = []
-    for i in range(n):
-        path = pathname + "_" + str(i) + '.png'
-        frames.append(imageio.imread(path))
+                nx.draw_networkx_edges(G, pos, width=1.0, alpha=0.5)
+                nx.draw_networkx_labels(G, pos, labels=nx.get_node_attributes(G, 'population'))
+                # nx.draw_networkx_edge_labels(G, pos, label_pos=.75)
 
-    kargs = {'duration': duration}
-    imageio.mimwrite(moviename + '.gif', frames, 'gif', **kargs)
+                s = pathname + "_" + str(i) + ".png"
+                pylab.savefig(s)
+                pylab.clf()
 
+            SIR['S'].append(Susceptible)
+            SIR['I'].append(Infected_now)
+            SIR['R'].append(Removed)
 
-def sim_infection(G, p, M, start):
-    N = G.number_of_nodes()
-    res = []
-    for i in range(M):
-        SIR = SIR_graph(G, prob=p, starting=start)
-        w = []
-        for vec in SIR['I']:
-            # vec is a list of lists, each for different time
-            # so w contains fraction of infected nodes at times t
-            w.append(len(vec) / N)
+            i += 1
 
-        for t in range(len(w)):
-            if len(res) <= t:
-                res.append(w[t] / M)
-            else:
-                res[t] += w[t] / M
-    return res
+        if save:
+            pylab.close(fig)
+        return SIR
+
+    def movie(n, pathname, moviename, duration=0.2):
+        frames = []
+        for i in range(n):
+            path = pathname + "_" + str(i) + '.png'
+            frames.append(imageio.imread(path))
+
+        kargs = {'duration': duration}
+        imageio.mimwrite(moviename + '.gif', frames, 'gif', **kargs)
+
+    def sir_on_network(g):
+        P = 0.8
+        mv = True  # SAVE AND MAKE MOVIE
+        pathname = 'fig'
+        SIR = SIR_graph(g, prob=P, save=mv, pathname=pathname)
+        movie(len(SIR['I']), pathname, 'sir_ba', 1.)
+
+    g = create_graph()
+    sir_on_network(g)
 
 
 def create_graph():
@@ -198,42 +188,31 @@ def create_graph():
     nx.set_node_attributes(g, density, 'density')
 
     # initialize SIR
-    starting_node = 1
-    nx.set_node_attributes(g, {node: [p, p - int(node == starting_node)] for node, p in population.items()}, 'S')
-    nx.set_node_attributes(g, {node: [0, int(node == starting_node)] for node in g.nodes()}, 'I')
-    nx.set_node_attributes(g, {node: [0, 0] for node in g.nodes()}, 'R')
-
-    s, i, r = lambda node, id: g.nodes[node]['S'][id], lambda node, id: g.nodes[node]['I'][id], \
-              lambda node, id: g.nodes[node]['R'][id]
-    n = lambda node, id: s(node, id) + i(node, id) + r(node, id)
-    nx.set_node_attributes(g, {node: [n(node, 0), n(node, 1)] for node in g.nodes()}, 'N')
+    # starting_node = 1
+    # nx.set_node_attributes(g, {node: p for node, p in population.items()}, 'N')
+    # nx.set_node_attributes(g, {node: p for node, p in population.items()}, 'S')
+    # nx.set_node_attributes(g, {node: 0 for node in g.nodes()}, 'I')
+    # nx.set_node_attributes(g, {node: 0 for node in g.nodes()}, 'R')
 
     # g = g.to_directed() # do we need this???
     commute = {edge: rnd.randint(50, 100) for edge in g.edges()}
-    nx.set_edge_attributes(g, commute, 'com')
+    nx.set_edge_attributes(g, commute, 'commute')
     return g
-
-
-def SIR_on_network(G, starting=None):
-    Susceptible = list(G.nodes())
-    prob = 0.5
-    if starting is None:
-        start = Susceptible[rnd.randint(0, len(Susceptible) - 1)]
-    else:
-        # start = starting
-        start = Susceptible[0]
-
-    return
-
-
-def sis_on_network(g):
-    P = 0.8
-    mv = True  # SAVE AND MAKE MOVIE
-    pathname = 'fig'
-    SIR = SIR_graph(g, prob=P, save=mv, pathname=pathname)
-    movie(len(SIR['I']), pathname, 'sir_ba', 1.)
 
 
 if __name__ == "__main__":
     g = create_graph()
-    sis_on_network(g)
+    # agent_sir_on_network()
+    node = 1
+
+    t = np.linspace(0, 10., 100)  # time grid
+    beta, mu = 0.03, 1.
+    s, i, r = sir_on_node(g, node, t, beta, mu, i0=1)
+    plot_change_in_population(t, s, i, r)
+
+    # tmp = g.nodes[node]
+    # print(tmp)
+    # nbrs = [*nx.neighbors(g, node)]
+    # print(nbrs)
+    # for nbr in nbrs:
+    #     print(nbr, g.get_edge_data(node, nbr)['commute'])
