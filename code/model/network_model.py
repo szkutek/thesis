@@ -40,7 +40,7 @@ def plot_change_in_population(filename, t, S, I, R=None):
     else:
         title = 'Plague model for S(0)=' + str(S[0]) + ', I(0)=' + str(I[0])
 
-    plt.xlabel('time')
+    plt.xlabel('t')
     plt.ylabel('population')
     plt.title(title)
     plt.legend(loc='best')
@@ -55,15 +55,18 @@ def sir_model_on_node(g, node, i, tau, beta, mu):
         infection_from_nbrs += g.get_edge_data(node, nbr)['commute'] * g.nodes[nbr]['I'][i - 1] \
                                / g.nodes[nbr]['population']
 
-    Si, Ii, Ri = g.nodes[node]['S'][i - 1], g.nodes[node]['I'][i - 1], g.nodes[node]['R'][i - 1]
-    y = np.array([Si, Ii, Ri])
+    y = np.array([g.nodes[node]['S'][i - 1], g.nodes[node]['I'][i - 1], g.nodes[node]['R'][i - 1]])
 
-    dS_dt = - beta * Si * Ii / N - beta * infection_from_nbrs
-    dI_dt = beta * Si * Ii / N + beta * infection_from_nbrs - mu * Ii
-    dR_dt = mu * Ii
+    def f(u):
+        Si, Ii, Ri = u
+        dS_dt = - beta * Si * Ii / N - beta * infection_from_nbrs
+        dI_dt = beta * Si * Ii / N + beta * infection_from_nbrs - mu * Ii
+        dR_dt = mu * Ii
+        return np.array([dS_dt, dI_dt, dR_dt])
+
     # TODO change to Runge-Kutta method
-    dy = np.array([dS_dt, dI_dt, dR_dt])
-    y += dy * tau
+    # # Euler method
+    y += f(y) * tau
 
     g.nodes[node]['S'][i], g.nodes[node]['I'][i], g.nodes[node]['R'][i] = y
     return
