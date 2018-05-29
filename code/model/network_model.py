@@ -4,31 +4,33 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 import pylab
-from scipy.integrate import odeint
 
 
-# solve the system dy/dt = f(y, t)
-def f1(y, t, beta, mu):  # SIR model
+def integrate(f, y0, t, args):
+    res = np.ndarray([len(t), len(y0)])
+    y = np.array([0., 0., 0.])
+    tau = t[1] - t[0]
+    for i, _ in enumerate(t):
+        y0 += np.array(y) * tau
+        res[i, :] = y0
+        y = f(y0, t, args)
+    return res
+
+
+def SIR_model_ODE(y, t, args):  # SIR model
+    beta, mu, infected_from_nbrs = args
     Si = y[0]  # susceptible
     Ii = y[1]  # infected
     Ri = y[2]  # recovered
+    N = sum(y)
     # TODO modify to work on graph
-    dS_dt = -beta * Si * Ii
-    dI_dt = beta * Si * Ii - mu * Ii
+    dS_dt = - beta * Si * Ii / N
+    dI_dt = beta * Si * Ii / N - mu * Ii
     dR_dt = mu * Ii
-    return [dS_dt, dI_dt, dR_dt]
+    return dS_dt, dI_dt, dR_dt
 
 
-def f2(y, t, beta, mu):  # SIS model
-    Si = y[0]  # susceptible
-    Ii = y[1]  # infected
-
-    dS_dt = -beta * Si * Ii
-    dI_dt = beta * Si * Ii
-    return [dS_dt, dI_dt]
-
-
-def plot_change_in_population(t, S, I, R=None):
+def plot_change_in_population(filename, t, S, I, R=None):
     plt.figure()
     plt.plot(t, S, label='Susceptible')
     plt.plot(t, I, label='Infected')
@@ -42,26 +44,22 @@ def plot_change_in_population(t, S, I, R=None):
     plt.ylabel('population')
     plt.title(title)
     plt.legend(loc='best')
-    plt.show()
+    plt.savefig(filename + '.png')
 
 
-def sir_on_node(g, node, t, beta, mu, i0=0):
-    # beta = 0.03  # infectivity
-    # mu = 1.  # recovery rate
+def sir_on_node(g, node, t, beta, mu, nbr_inf=1, i0=0):
     N = g.nodes[node]['population']
     R0 = beta * N / mu  # basic reproductive ratio
     print(R0)
-    # # disease free state s0 = N, i0 = 0, R0 = 0
 
-    # initial conditions
-    s0 = N - i0  # initial number of susceptible individuals
+    infection_from_nbrs = 0.
+    if nbr_inf:
+        nbrs = [*nx.neighbors(g, node)]
+        for nbr in nbrs:
+            infection_from_nbrs += g.get_edge_data(node, nbr)['commute'] / g.nodes[nbr]['population']
 
-    # # solve the DEs
-    y0 = [s0, i0, 0]  # initial condition vector
-    soln = odeint(f1, y0, t, args=(beta, mu))
-    # S = [s0] + soln[:, 0]
-    # I = [i0] + soln[:, 1]
-    # R = [R0] + soln[:, 2]
+    y0 = [N - i0, i0, 0]  # initial condition vector
+    soln = integrate(SIR_model_ODE, y0, t, args=(beta, mu, infection_from_nbrs))
     s = soln[:, 0]
     i = soln[:, 1]
     r = soln[:, 2]
@@ -70,22 +68,6 @@ def sir_on_node(g, node, t, beta, mu, i0=0):
     # nx.set_node_attributes(g, {node: i}, 'I')
     # nx.set_node_attributes(g, {node: r}, 'R')
     return s, i, r
-
-
-def model_SI(N, t, beta, mu, I0):
-    # beta = 0.03  # infectivity
-    # mu = 1.  # recovery rate
-
-    # initial conditions
-    S0 = N - I0  # initial population
-
-    # # solve the DEs
-    y0 = [S0, I0]  # initial condition vector
-    soln2 = odeint(f2, y0, t, args=(beta, mu))
-    S = soln2[:, 0]
-    I = soln2[:, 1]
-    # plot_change_in_population(t, S, I)
-    return S, I
 
 
 def agent_sir_on_network():
@@ -202,13 +184,17 @@ def create_graph():
 
 if __name__ == "__main__":
     g = create_graph()
-    # agent_sir_on_network()
     node = 1
 
-    t = np.linspace(0, 10., 100)  # time grid
-    beta, mu = 0.03, 1.
-    s, i, r = sir_on_node(g, node, t, beta, mu, i0=1)
-    plot_change_in_population(t, s, i, r)
+    t = np.linspace(0, 100., 1001)  # time grid
+    beta, mu = 1., 0.03
+
+    nbr_inf = 0
+    s, i, r = sir_on_node(g, node, t, beta, mu, nbr_inf=nbr_inf, i0=1)
+    plot_change_in_population('test2_' + str(nbr_inf), t, s, i, r)
+    nbr_inf = 1
+    s, i, r = sir_on_node(g, node, t, beta, mu, nbr_inf=nbr_inf, i0=1)
+    plot_change_in_population('test2_' + str(nbr_inf), t, s, i, r)
 
     # tmp = g.nodes[node]
     # print(tmp)
