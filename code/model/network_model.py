@@ -59,8 +59,8 @@ def sir_model_on_node(g, node, i, tau, beta, mu):
 
     def f(u):
         Si, Ii, Ri = u
-        dS_dt = - beta * Si * Ii / N - beta * infection_from_nbrs
-        dI_dt = beta * Si * Ii / N + beta * infection_from_nbrs - mu * Ii
+        dS_dt = - beta * Si * Ii / N - beta * Si / N * infection_from_nbrs
+        dI_dt = beta * Si * Ii / N + beta * Si / N * infection_from_nbrs - mu * Ii
         dR_dt = mu * Ii
         return np.array([dS_dt, dI_dt, dR_dt])
 
@@ -119,4 +119,4 @@ if __name__ == "__main__":
 
     for test_node in [1, 2, 3]:
         s, i, r = g.nodes[test_node]['S'], g.nodes[test_node]['I'], g.nodes[test_node]['R']
-        plot_change_in_population('test_' + str(test_node), t, s, i, r)
+        plot_change_in_population('test2_' + str(test_node), t, s, i, r)
