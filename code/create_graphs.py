@@ -15,6 +15,10 @@ def plot_with_folium(pos):
 
 
 def read_files(type):
+    """
+    :param type: 'gminas', 'powiats', 'voivodeships'
+    :return: tuple of dataframe with teryt number and geometry and dict {teryt: list of neighbouring teryts}
+    """
     with open('../data/' + type + '_neighbours.json') as file:
         nbrs = json.load(file)  # dict {teryt: list of neighbouring teryts}
     df = gpd.read_file('../data/' + type + '.shp', encoding='utf-8')
@@ -44,7 +48,7 @@ def plot_pos(pos):
 
 def add_work_migration(G):
     """adding weights to edges
-    if edge doesn't exits -> find shortest pathfile and accumulate weights"""
+    if edge doesn't exits -> find shortest path and accumulate weights"""
     work_migration = pd.read_csv('../data/l_macierz_2014_03_18.csv', delimiter=';', dtype={0: str, 1: str})
     work_migration = work_migration.loc[:, work_migration.columns[:3]]
     migration = []
@@ -90,7 +94,7 @@ def gminas_network():
     # type = 'gminas'
     type = 'voivodeships'
     df, nbrs = read_files(type)
-    pos = create_pos(df)  # {node: (pt_y, pt_x)}
+    pos = create_pos(df)  # {node: (pt_x, pt_y)}
     G = create_gminas_graph(pos, nbrs)
     return G, pos
 
