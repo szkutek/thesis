@@ -26,24 +26,12 @@ def create_df_voivodeships(shp_link):
     df.to_file('../data/voivodeships.shp', driver='ESRI Shapefile', encoding='utf-8')
 
 
-def create_df_powiats(df_terc):
-    shp_link = '../data/PRG_jednostki_administracyjne_v22/powiaty.shp'
+def create_df_powiats(shp_link):
     shp = gpd.read_file(shp_link)
-    df_shp = shp.loc[:, ('jpt_kod_je', 'geometry')]
-    df_shp.rename(columns={'jpt_kod_je': 'teryt'}, inplace=True)
+    df = shp.loc[:, ('jpt_kod_je', 'jpt_nazwa_', 'geometry')]
+    df.rename(columns={'jpt_kod_je': 'teryt', 'jpt_nazwa_': 'name'}, inplace=True)
 
-    df_terc = df_terc[df_terc.loc[:, 'POW'].notnull()]
-    df_terc = df_terc[df_terc.loc[:, 'GMI'].isnull()]
-
-    teryts = df_terc.apply(lambda x: x['WOJ'] + x['POW'], axis=1)
-    df_terc['teryt'] = teryts
-
-    df_names = df_terc.loc[:, ('teryt', 'NAZWA')]
-    df_names.rename(columns={'NAZWA': 'name'}, inplace=True)
-
-    df = pd.merge(df_names, df_shp, on='teryt')
     df = gpd.GeoDataFrame(df, geometry='geometry')
-
     df = add_centerpoint(df)
     df.to_file('../data/powiats.shp', driver='ESRI Shapefile', encoding='utf-8')
 
@@ -59,13 +47,10 @@ def create_df_gminas(shp_link):
 
 
 def create_shp(pathfile, type):
-    terc_link = '../data/TERC_Urzedowy_2018-04-17/TERC_Urzedowy_2018-04-17.csv'
-    df_terc = pd.read_csv(terc_link, sep=';', dtype={'WOJ': str, 'POW': str, 'GMI': str, 'RODZ': str})
-
     if type == 'voivodeships':
         create_df_voivodeships(pathfile + 'wojewodztwa.shp')
     elif type == 'powiats':
-        create_df_powiats(df_terc)
+        create_df_powiats(pathfile + 'powiaty.shp')
     elif type == 'gminas':
         create_df_gminas(pathfile + 'gminy.shp')
 
