@@ -17,7 +17,8 @@ def plot_with_folium(pos):
 def read_files(type):
     """
     :param type: 'gminas', 'powiats', 'voivodeships'
-    :return: tuple of dataframe with teryt number and geometry and dict {teryt: list of neighbouring teryts}
+    :return: tuple of dataframe with teryt number, representative point and geometry
+    and dict {teryt: list of neighbouring teryts}
     """
     with open('../data/' + type + '_neighbours.json') as file:
         nbrs = json.load(file)  # dict {teryt: list of neighbouring teryts}
@@ -46,14 +47,25 @@ def plot_pos(pos):
     plt.show()
 
 
+def add_population(G):
+    pop_df = pd.read_csv('../data/ludnosc/LUDN_2017.csv', delimiter=';', dtype={0: str})
+    pop_df.rename(columns={'Kod': 'teryt',
+                           'gminy bez miast na prawach powiatu;miejsce zamieszkania;stan na 31 XII;ogółem;2017;[osoba]':
+                               'pop_no_cities',
+                           'miasta na prawach powiatu;miejsce zamieszkania;stan na 31 XII;ogółem;2017;[osoba]':
+                               'pop_cities'},
+                  inplace=True)
+    pop = pop_df.loc[:, ('pop_no_cities', 'pop_cities')].apply(sum, axis=1).tolist()
+    population = dict(zip(pop_df.loc[:, 'teryt'].tolist(), pop))
+    nx.set_node_attributes(G, population, 'population')
+
+
 def add_work_migration(G):
     """adding weights to edges
     if edge doesn't exits -> find shortest path and accumulate weights"""
     work_migration = pd.read_csv('../data/l_macierz_2014_03_18.csv', delimiter=';', dtype={0: str, 1: str})
     work_migration = work_migration.loc[:, work_migration.columns[:3]]
-    migration = []
-    work_migration.apply(lambda x: migration.append((x[0][:2], x[1][:2], x[2])),
-                         axis=1)  # TODO remove [:2] (so that we calc for gminas)
+    work_migration = work_migration.apply(tuple, axis=1).tolist()
 
     def set_work_migration(G, e1, e2, w):
         if 'work' in G[e1][e2]:
@@ -62,14 +74,14 @@ def add_work_migration(G):
             G[e1][e2]['work'] = w
 
     path = nx.shortest_path(G)  # source and target not specified
-    for e1, e2, w in migration:
+    for e1, e2, w in work_migration:
         p = path[e1][e2]  # [e1, e2, e3, ..., en]
         pairs = list(zip(p[:-1], p[1:]))  # [(e1, e2), (e2, e3), ...]
-        for p1, p2 in pairs:  # add work migration to edges in pathfile p
+        for p1, p2 in pairs:  # add work migration to edges in path p
             set_work_migration(G, p1, p2, w)
 
 
-def save_graph(G, node_labels=False, edge_labels=False):
+def save_graph(G, pos, node_labels=False, edge_labels=False):
     nx.draw_networkx_nodes(G, pos=pos, node_size=100, node_color='red', edge_color='k', alpha=.5,
                            with_labels=False)
     nx.draw_networkx_edges(G, pos=pos, edge_color='red', alpha=.3)
@@ -86,13 +98,14 @@ def create_gminas_graph(pos, nbrs):
     G.add_nodes_from(pos.keys())
     nbrs = sum([list(map(lambda el: (k, el), v)) for k, v in nbrs.items()], [])  # list of tuples
     G.add_edges_from(nbrs)
+    add_population(G)
     add_work_migration(G)
     return G
 
 
 def gminas_network():
-    # type = 'gminas'
-    type = 'voivodeships'
+    type = 'gminas'
+    # type = 'voivodeships'
     df, nbrs = read_files(type)
     pos = create_pos(df)  # {node: (pt_x, pt_y)}
     G = create_gminas_graph(pos, nbrs)
@@ -100,11 +113,11 @@ def gminas_network():
 
 
 if __name__ == '__main__':
-    # type = 'gminas'
-    type = 'voivodeships'
+    type = 'gminas'
+    # type = 'voivodeships'
     df, nbrs = read_files(type)
     df.plot(alpha=0.3)
     # plt.show()
     pos = create_pos(df)  # {node: (pt_x, pt_y)} (coordinates)
     G = create_gminas_graph(pos, nbrs)
-    save_graph(G, True, True)
+    save_graph(G, pos, True, True)

@@ -13,16 +13,13 @@ def add_centerpoint(df):
     df.loc[:, 'pt_x'] = centerpoints_x
     df.loc[:, 'pt_y'] = centerpoints_y
 
-    return df
-
 
 def create_df_voivodeships(shp_link):
     shp = gpd.read_file(shp_link, encoding='windows-1250')
     df = pd.DataFrame(shp, columns=['jpt_kod_je', 'jpt_nazwa_', 'geometry'])
     df.rename(columns={'jpt_kod_je': 'teryt', 'jpt_nazwa_': 'name'}, inplace=True)
 
-    df = gpd.GeoDataFrame(df, geometry='geometry')
-    df = add_centerpoint(df)
+    add_centerpoint(df)
     df.to_file('../data/voivodeships.shp', driver='ESRI Shapefile', encoding='utf-8')
 
 
@@ -31,8 +28,7 @@ def create_df_powiats(shp_link):
     df = shp.loc[:, ('jpt_kod_je', 'jpt_nazwa_', 'geometry')]
     df.rename(columns={'jpt_kod_je': 'teryt', 'jpt_nazwa_': 'name'}, inplace=True)
 
-    df = gpd.GeoDataFrame(df, geometry='geometry')
-    df = add_centerpoint(df)
+    add_centerpoint(df)
     df.to_file('../data/powiats.shp', driver='ESRI Shapefile', encoding='utf-8')
 
 
@@ -41,12 +37,11 @@ def create_df_gminas(shp_link):
     df = shp.loc[:, ('jpt_kod_je', 'jpt_nazwa_', 'geometry')]
     df.rename(columns={'jpt_kod_je': 'teryt', 'jpt_nazwa_': 'name'}, inplace=True)
 
-    df = gpd.GeoDataFrame(df, geometry='geometry')
-    df = add_centerpoint(df)
+    add_centerpoint(df)
     df.to_file('../data/gminas.shp', driver='ESRI Shapefile', encoding='utf-8')
 
 
-def create_shp(pathfile, type):
+def create_shp(type):
     if type == 'voivodeships':
         create_df_voivodeships(pathfile + 'wojewodztwa.shp')
     elif type == 'powiats':
@@ -60,7 +55,7 @@ if __name__ == '__main__':
 
     type = 'gminas'
     # type = 'voivodeships'
-    create_shp(pathfile, type)
+    create_shp(type)
 
     df = gpd.read_file('../data/' + type + '.shp', encoding='utf-8')
     df = gpd.GeoDataFrame(df, geometry='geometry')
