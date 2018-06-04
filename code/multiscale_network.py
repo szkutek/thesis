@@ -31,5 +31,5 @@ if __name__ == '__main__':
     print(gminas_pos)
     print(flights.nodes())
     print(flights_pos)
-
+    # TODO connect airports to the cities
     plot_network(gminas, flights, gminas_pos, flights_pos, True, True)

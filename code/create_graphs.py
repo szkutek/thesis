@@ -18,10 +18,10 @@ def read_files(type):
     """
     :param type: 'gminas', 'powiats', 'voivodeships'
     :return: tuple of dataframe with teryt number, representative point and geometry
-    and dict {teryt: list of neighbouring teryts}
+    and list of tuples [[n1, n2], [n1, n3], ...]
     """
     with open('../data/' + type + '_neighbours.json') as file:
-        nbrs = json.load(file)  # dict {teryt: list of neighbouring teryts}
+        nbrs = json.load(file)  # list of tuples [[n1, n2], [n1, n3], ...]
     df = gpd.read_file('../data/' + type + '.shp', encoding='utf-8')
     df = gpd.GeoDataFrame(df, geometry='geometry')
     df.set_index('teryt', inplace=True, drop=False)
@@ -96,7 +96,6 @@ def save_graph(G, pos, node_labels=False, edge_labels=False):
 def create_gminas_graph(pos, nbrs):
     G = nx.DiGraph()
     G.add_nodes_from(pos.keys())
-    nbrs = sum([list(map(lambda el: (k, el), v)) for k, v in nbrs.items()], [])  # list of tuples
     G.add_edges_from(nbrs)
     add_population(G)
     add_work_migration(G)
@@ -120,4 +119,5 @@ if __name__ == '__main__':
     # plt.show()
     pos = create_pos(df)  # {node: (pt_x, pt_y)} (coordinates)
     G = create_gminas_graph(pos, nbrs)
-    save_graph(G, pos, True, True)
+    # save_graph(G, pos, True, True)
+    save_graph(G, pos)

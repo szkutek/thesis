@@ -42,6 +42,8 @@ def create_df_gminas(shp_link):
 
 
 def create_shp(type):
+    pathfile = '../data/simplified_geometry/shp/'
+
     if type == 'voivodeships':
         create_df_voivodeships(pathfile + 'wojewodztwa.shp')
     elif type == 'powiats':
@@ -51,8 +53,6 @@ def create_shp(type):
 
 
 if __name__ == '__main__':
-    pathfile = '../data/simplified_geometry/shp/'
-
     type = 'gminas'
     # type = 'voivodeships'
     create_shp(type)

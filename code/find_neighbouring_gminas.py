@@ -5,9 +5,6 @@ import shapely.geometry
 
 import create_shapefiles
 
-from os import path
-from pykml import parser
-
 
 def convert_to_kml_coords():
     path = '../data/simplified_geometry/shp/'
@@ -32,16 +29,16 @@ def save_neighbours_to_json(type):
                 print(r1['name'], r2['name'])
                 nbrs.add(r2['teryt'])
         neighbours[r1['teryt']] = list(nbrs)
+
+    neighbours = sum([list(map(lambda el: (k, el), v)) for k, v in neighbours.items()], [])  # list of tuples (e1,e2,w)
     json.dump(neighbours, open('../data/' + type + '_neighbours.json', 'w'))
 
 
 if __name__ == '__main__':
     # check which polygons are neighbours -> shapely.geometry.shape(poly1).touches(poly2)
     type = 'gminas'
-    type = 'voivodeships'
-    # TODO manually add neighbours for the gminas that are not connected to the cluster
+    # type = 'voivodeships'
     create_shapefiles.create_shp(type)
     # save_neighbours_to_json(type)
     # with open('../data/' + type + '_neighbours.json') as file:
     #     nbrs = json.load(file)
-    #     print(list(nbrs.items())[:5])
