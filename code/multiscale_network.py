@@ -5,7 +5,7 @@ import create_flight_connections
 import create_graphs
 
 
-def plot_network(G1, G2, pos1, pos2, node_labels=False, edge_labels=False):
+def plot_network(G1, pos1, G2, pos2, node_labels=False, edge_labels=False):
     nx.draw_networkx_nodes(G1, pos=pos1, node_size=100, node_color='red', edge_color='k', alpha=.5,
                            with_labels=False)
     nx.draw_networkx_edges(G1, pos=pos1, edge_color='red', alpha=.3)
@@ -27,9 +27,6 @@ def plot_network(G1, G2, pos1, pos2, node_labels=False, edge_labels=False):
 if __name__ == '__main__':
     gminas, gminas_pos = create_graphs.gminas_network()
     flights, flights_pos = create_flight_connections.flights_network()
-    print(gminas.nodes())
-    print(gminas_pos)
-    print(flights.nodes())
-    print(flights_pos)
+
     # TODO connect airports to the cities
-    plot_network(gminas, flights, gminas_pos, flights_pos, True, True)
+    plot_network( flights, flights_pos,gminas, gminas_pos, False, False)

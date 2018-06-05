@@ -5,15 +5,6 @@ import pandas as pd
 import geopandas as gpd
 
 
-def plot_with_folium(pos):
-    """pos = {name: [lat, lng]}"""
-    import folium
-    m = folium.Map(location=[51.9194, 19.1451], zoom_start=6, tiles='cartodbpositron')
-    for k, pt in pos.items():
-        folium.Marker(location=pt, popup=k).add_to(m)
-    m.save('_map.html')
-
-
 def read_files(type):
     """
     :param type: 'gminas', 'powiats', 'voivodeships'
@@ -36,15 +27,12 @@ def create_pos(df):
     return pos
 
 
-def plot_pos(pos):
+def plot_bg():
+    # BACKGROUND
     type_bg = 'voivodeships'  # background areas
     df_bg = gpd.read_file('../data/' + type_bg + '.shp', encoding='utf-8')
     df_bg = gpd.GeoDataFrame(df_bg, geometry='geometry')
-
-    x, y = zip(*pos.values())
-    df_bg.plot()  # # df_bg.plot(column='name', cmap='GnBu')
-    plt.plot(x, y, 'r.')
-    plt.show()
+    df_bg.plot(alpha=0.3, figsize=(10, 10))  # # df_bg.plot(column='name', cmap='GnBu')
 
 
 def add_population(G):
@@ -74,14 +62,22 @@ def add_work_migration(G):
             G[e1][e2]['work'] = w
 
     path = nx.shortest_path(G)  # source and target not specified
+    errs = 0
     for e1, e2, w in work_migration:
-        p = path[e1][e2]  # [e1, e2, e3, ..., en]
+        # TODO fix key error in path
+        try:
+            p = path[e1][e2]  # [e1, e2, e3, ..., en]
+        except:
+            errs += 1
+            p = []
         pairs = list(zip(p[:-1], p[1:]))  # [(e1, e2), (e2, e3), ...]
         for p1, p2 in pairs:  # add work migration to edges in path p
             set_work_migration(G, p1, p2, w)
+    print(errs)
 
 
 def save_graph(G, pos, node_labels=False, edge_labels=False):
+    plot_bg()
     nx.draw_networkx_nodes(G, pos=pos, node_size=100, node_color='red', edge_color='k', alpha=.5,
                            with_labels=False)
     nx.draw_networkx_edges(G, pos=pos, edge_color='red', alpha=.3)
@@ -89,7 +85,7 @@ def save_graph(G, pos, node_labels=False, edge_labels=False):
         nx.draw_networkx_labels(G, pos=pos, label_pos=0.5)
     if edge_labels:
         nx.draw_networkx_edge_labels(G, pos=pos, label_pos=0.5)
-    plt.savefig('../data/graphs/graph_' + type + '.png')
+    plt.savefig('../data/graphs/graph_gminas.png')
     plt.show()
 
 
@@ -103,21 +99,13 @@ def create_gminas_graph(pos, nbrs):
 
 
 def gminas_network():
-    type = 'gminas'
-    # type = 'voivodeships'
-    df, nbrs = read_files(type)
+    df, nbrs = read_files('gminas')
     pos = create_pos(df)  # {node: (pt_x, pt_y)}
     G = create_gminas_graph(pos, nbrs)
     return G, pos
 
 
 if __name__ == '__main__':
-    type = 'gminas'
-    # type = 'voivodeships'
-    df, nbrs = read_files(type)
-    df.plot(alpha=0.3)
-    # plt.show()
-    pos = create_pos(df)  # {node: (pt_x, pt_y)} (coordinates)
-    G = create_gminas_graph(pos, nbrs)
+    G, pos = gminas_network()
     # save_graph(G, pos, True, True)
     save_graph(G, pos)

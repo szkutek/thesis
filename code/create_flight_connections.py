@@ -1,6 +1,38 @@
 import matplotlib.pyplot as plt
 import networkx as nx
 import pandas as pd
+import geopandas as gpd
+
+
+def find_gmina_in_voiv(gmina, voiv, gminas_df):
+    voiv_df = gpd.read_file('../data/voivodeships.shp', encoding='utf-8')
+    voiv_df = gpd.GeoDataFrame(voiv_df, geometry='geometry')
+    voiv_df.set_index('name', inplace=True, drop=False)
+    for i, r in gminas_df.iterrows():
+        if r['name'] == gmina and r['teryt'][:2] == voiv_df.loc[voiv, 'teryt']:
+            return r['teryt'], r['pt_x'], r['pt_y']
+
+
+def add_airport_coordinates(table):
+    coord = [(52.1672, 20.9679), (50.0770, 19.7881), (54.3788, 18.4681), (50.4728, 19.0759), (52.4493, 20.6512),
+             (51.1042, 16.8809), (52.4200, 16.8286), (50.1148, 22.0246), (53.5859, 14.9028), (51.2358, 22.7151),
+             (53.0980, 17.9727), (51.7197, 19.3908), (53.4806, 20.9362), (52.1372, 15.7781), (51.3931, 21.1994)]
+    table.set_index('IATA', drop=False, inplace=True)
+
+    df = gpd.read_file('../data/gminas.shp', encoding='utf-8')
+    df = gpd.GeoDataFrame(df, geometry='geometry')
+    df.set_index('teryt', inplace=True, drop=False)
+
+    coord = []
+    teryts = []
+    for i, r in table.iterrows():
+        teryt, pt_x, pt_y = find_gmina_in_voiv(r['gmina'], r['voivodeship'], df)
+        teryts.append(teryt)
+        coord.append((pt_x, pt_y))
+    table.loc[:, 'teryt'] = teryts
+    c_x, c_y = zip(*coord)
+    table.loc[:, 'coord_x'] = c_x
+    table.loc[:, 'coord_y'] = c_y
 
 
 def create_df_airports(link):
@@ -10,29 +42,31 @@ def create_df_airports(link):
     table = pd.DataFrame(table[0][:15],
                          columns=('Główne miasto dla portu', 'Województwo', 'Gmina/miasto',
                                   # 'Nazwa toponomiczna (miejscowość/dzielnica)',
-                                  'ICAO', 'IATA',
+                                  # 'ICAO',
+                                  'IATA',
                                   'Nazwa portu lotniczego',
                                   'Ofic. liczba pasażerów (2016)[2]',
                                   'Ofic. liczba pasażerów (2017)[2]'))
-    coord = [(52.1672, 20.9679), (50.0770, 19.7881), (54.3788, 18.4681), (50.4728, 19.0759), (52.4493, 20.6512),
-             (51.1042, 16.8809), (52.4200, 16.8286), (50.1148, 22.0246), (53.5859, 14.9028), (51.2358, 22.7151),
-             (53.0980, 17.9727), (51.7197, 19.3908), (53.4806, 20.9362), (52.1372, 15.7781), (51.3931, 21.1994)]
-    c_x, c_y = zip(*coord)
-    table.loc[:, 'coord_x'] = c_x
-    table.loc[:, 'coord_y'] = c_y
+    table.rename(columns={'Główne miasto dla portu': 'city',
+                          'Województwo': 'voivodeship', 'Gmina/miasto': 'gmina',
+                          'Nazwa portu lotniczego': 'airport name',
+                          'Ofic. liczba pasażerów (2016)[2]': 'passengers 2016',
+                          'Ofic. liczba pasażerów (2017)[2]': 'passengers 2017'}, inplace=True)
+    add_airport_coordinates(table)
     table.to_csv(link, sep=';', encoding='utf-8', index=False)
 
 
-def read_airports():
+def read_airports(create=False):
     link = '../data/airports_poland.csv'
-    # create_df_airports(link)
-    table = pd.read_csv(link, sep=';', encoding='utf-8')
+    if create:
+        create_df_airports(link)
+    table = pd.read_csv(link, sep=';', encoding='utf-8', dtype={'teryt': str})
     table.set_index('IATA', drop=False, inplace=True)
     return table
 
 
 def create_pos_for_shp(df):
-    pts = df.loc[:, ('coord_y', 'coord_x')].apply(tuple, axis=1)
+    pts = df.loc[:, ('coord_x', 'coord_y')].apply(tuple, axis=1)
     # # for folium replace y and x:
     # pts = df.loc[:, ('coord_x', 'coord_y')].apply(tuple, axis=1)
     pos = dict(zip(df['IATA'], pts))
@@ -82,8 +116,8 @@ def flights_network():
 
 
 if __name__ == '__main__':
-    df = read_airports()
-    print(df)
+    df = read_airports(create=False)
+    # print(df)
     pos = create_pos_for_shp(df)
     G = create_airports_graph(pos)
     save_graph(G, True, True)
