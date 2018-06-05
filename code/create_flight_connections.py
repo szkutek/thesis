@@ -86,15 +86,6 @@ def save_graph(G, node_labels=False, edge_labels=False):
     plt.show()
 
 
-def plot_with_folium(pos):
-    """pos = {name: [lat, lng]}"""
-    import folium
-    m = folium.Map(location=[51.9194, 19.1451], zoom_start=6, tiles='cartodbpositron')
-    for k, pt in pos.items():
-        folium.Marker(location=pt, popup=k).add_to(m)
-    m.save('../data/graphs/airports.html')
-
-
 def create_airports_graph(pos):
     airports = nx.DiGraph()
     airports.add_nodes_from(pos.keys())
@@ -121,4 +112,3 @@ if __name__ == '__main__':
     pos = create_pos_for_shp(df)
     G = create_airports_graph(pos)
     save_graph(G, True, True)
-    plot_with_folium(pos)
