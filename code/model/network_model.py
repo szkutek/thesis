@@ -34,19 +34,20 @@ def sir_model_on_node(g, node, i, t, beta, mu):
 
     def f(u):
         Si, Ii, Ri = u
-        dS_dt = - beta * Si / N * Ii / N - beta * Si / N * infection_from_nbrs
-        dI_dt = beta * Si / N * Ii / N + beta * Si / N * infection_from_nbrs - mu * Ii
+        dS_dt = - beta * Si * Ii - beta * Si * infection_from_nbrs
+        dI_dt = beta * Si * Ii + beta * Si * infection_from_nbrs - mu * Ii
         dR_dt = mu * Ii
         return np.array([dS_dt, dI_dt, dR_dt])
 
     # # Euler method
     # y += f(y) * dt
+
     # # Runge-Kutta method of 4th order
-    k1 = dt * f(y)
-    k2 = dt * f(y + k1 / 2.)
-    k3 = dt * f(y + k2 / 2.)
-    k4 = dt * f(y + k3)
-    y += (k1 + 2. * k2 + 2. * k3 + k4) / 6.
+    k1 = f(y)
+    k2 = f(y + dt * k1 / 2.)
+    k3 = f(y + dt * k2 / 2.)
+    k4 = f(y + dt * k3)
+    y += dt / 6. * (k1 + 2. * k2 + 2. * k3 + k4)
 
     g.nodes[node]['S'][i], g.nodes[node]['I'][i], g.nodes[node]['R'][i] = y
     return
@@ -83,8 +84,7 @@ def create_graph(t):
     nx.set_node_attributes(g, {node: np.zeros(time) for node in g.nodes()}, 'I')
     nx.set_node_attributes(g, {node: np.zeros(time) for node in g.nodes()}, 'R')
 
-    # g = g.to_directed() # do we need this???
-    commute = {edge: rnd.randint(50, 100) for edge in g.edges()}
+    commute = {edge: rnd.randint(10, 50) for edge in g.edges()}
     nx.set_edge_attributes(g, commute, 'commute')
     return g
 
@@ -94,7 +94,7 @@ if __name__ == "__main__":
     beta, mu = .8, 0.05
     R0 = beta / mu
     print(R0)
-    t = np.linspace(0, 100., 1001)  # time grid
+    t = np.linspace(0, .05, 1001)  # time grid
 
     g = create_graph(t)
 

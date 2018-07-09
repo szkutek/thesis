@@ -4,10 +4,7 @@ import pandas as pd
 import geopandas as gpd
 
 
-def find_gmina_in_voiv(gmina, voiv, gminas_df):
-    voiv_df = gpd.read_file('../data/voivodeships.shp', encoding='utf-8')
-    voiv_df = gpd.GeoDataFrame(voiv_df, geometry='geometry')
-    voiv_df.set_index('name', inplace=True, drop=False)
+def find_gmina_in_voiv(gmina, voiv, gminas_df, voiv_df):
     for i, r in gminas_df.iterrows():
         if r['name'] == gmina and r['teryt'][:2] == voiv_df.loc[voiv, 'teryt']:
             return r['teryt'], r['pt_x'], r['pt_y']
@@ -19,14 +16,18 @@ def add_airport_coordinates(table):
              (53.0980, 17.9727), (51.7197, 19.3908), (53.4806, 20.9362), (52.1372, 15.7781), (51.3931, 21.1994)]
     table.set_index('IATA', drop=False, inplace=True)
 
-    df = gpd.read_file('../data/gminas.shp', encoding='utf-8')
-    df = gpd.GeoDataFrame(df, geometry='geometry')
-    df.set_index('teryt', inplace=True, drop=False)
+    gminas_df = gpd.read_file('../data/gminas.shp', encoding='utf-8')
+    gminas_df = gpd.GeoDataFrame(gminas_df, geometry='geometry')
+    gminas_df.set_index('teryt', inplace=True, drop=False)
+
+    voiv_df = gpd.read_file('../data/voivodeships.shp', encoding='utf-8')
+    voiv_df = gpd.GeoDataFrame(voiv_df, geometry='geometry')
+    voiv_df.set_index('name', inplace=True, drop=False)
 
     coord = []
     teryts = []
     for i, r in table.iterrows():
-        teryt, pt_x, pt_y = find_gmina_in_voiv(r['gmina'], r['voivodeship'], df)
+        teryt, pt_x, pt_y = find_gmina_in_voiv(r['gmina'], r['voivodeship'], gminas_df, voiv_df)
         teryts.append(teryt)
         coord.append((pt_x, pt_y))
     table.loc[:, 'teryt'] = teryts
@@ -66,9 +67,7 @@ def read_airports(create=False):
 
 
 def create_pos_for_shp(df):
-    pts = df.loc[:, ('coord_x', 'coord_y')].apply(tuple, axis=1)
-    # # for folium replace y and x:
-    # pts = df.loc[:, ('coord_x', 'coord_y')].apply(tuple, axis=1)
+    pts = df.loc[:, ('coord_x', 'coord_y')].apply(tuple, axis=1)  # for folium replace y and x
     pos = dict(zip(df['IATA'], pts))
     df.loc[:, 'coords'] = pts
     return pos

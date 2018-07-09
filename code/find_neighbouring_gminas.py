@@ -30,7 +30,8 @@ def save_neighbours_to_json(type):
                 nbrs.add(r2['teryt'])
         neighbours[r1['teryt']] = list(nbrs)
 
-    neighbours = sum([list(map(lambda el: (k, el), v)) for k, v in neighbours.items()], [])  # list of tuples (e1,e2,w)
+    neighbours = sum([list(map(lambda el: (k, el), v)) for k, v in neighbours.items()],
+                     [])  # list of tuples (teryt1, teryt2)
     json.dump(neighbours, open('../data/' + type + '_neighbours.json', 'w'))
 
 
@@ -40,5 +41,6 @@ if __name__ == '__main__':
     # type = 'voivodeships'
     create_shapefiles.create_shp(type)
     # save_neighbours_to_json(type)
-    # with open('../data/' + type + '_neighbours.json') as file:
-    #     nbrs = json.load(file)
+    with open('../data/' + type + '_neighbours.json') as file:
+        nbrs = json.load(file)
+        print(nbrs[:10])
