@@ -65,9 +65,8 @@ def sir_ode_on_network(g, starting_node, I0, t, beta, mu):
             sir_model_on_node(g, node, i + 1, t, beta, mu)
 
 
-def create_graph(t):
+def create_graph(t, number_of_nodes):
     time = len(t)
-    number_of_nodes = 20
 
     g = nx.barabasi_albert_graph(number_of_nodes, 2)
     population = {node: rnd.randint(100, 1000) for node in g.nodes()}
@@ -90,13 +89,16 @@ def create_graph(t):
 
 
 if __name__ == "__main__":
+    number_of_nodes = 10
+
     node = 1
-    beta, mu = .8, 0.05
+    beta, mu = .08, 0.5
     R0 = beta / mu
     print(R0)
-    t = np.linspace(0, .05, 1001)  # time grid
+    print(R0 * number_of_nodes)
+    t = np.linspace(0, 5, 1001)  # time grid
 
-    g = create_graph(t)
+    g = create_graph(t, number_of_nodes)
 
     sir_ode_on_network(g, node, 1, t, beta, mu)
 
