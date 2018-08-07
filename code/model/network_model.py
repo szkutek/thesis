@@ -28,11 +28,11 @@ def sir_model_on_node(g, nodes, results, node, i, dt, beta, mu):
     for nbr in nbrs:
         # infection_from_nbrs += g.get_edge_data(node, nbr)['commute'] * results['I'][nodes[nbr]][i - 1] \
         #                        / g.nodes[nbr]['population']
-        infection_from_nbrs += g.get_edge_data(node, nbr)['commute'] * results['I'][nbr][i - 1] \
+        infection_from_nbrs += g.get_edge_data(node, nbr)['commute'] * results['I'][nbr, i - 1] \
                                / g.nodes[nbr]['population']
 
     # y = np.array([results['S'][nodes[node]][i - 1], results['I'][nodes[node]][i - 1], results['R'][nodes[node]][i - 1]])
-    y = np.array([results['S'][node][i - 1], results['I'][node][i - 1], results['R'][node][i - 1]])
+    y = np.array([results['S'][node, i - 1], results['I'][node, i - 1], results['R'][node, i - 1]])
 
     def f(u):
         Si, Ii, Ri = u
@@ -52,7 +52,7 @@ def sir_model_on_node(g, nodes, results, node, i, dt, beta, mu):
     y += dt / 6. * (k1 + 2. * k2 + 2. * k3 + k4)
 
     # results['S'][nodes[node]][i], results['I'][nodes[node]][i], results['R'][nodes[node]][i] = y
-    results['S'][node][i], results['I'][node][i], results['R'][node][i] = y
+    results['S'][node, i], results['I'][node, i], results['R'][node, i] = y
     return
 
 
@@ -62,10 +62,10 @@ def sir_ode_on_network(g, nodes, starting_node, I0, t, beta, mu):
                'I': np.zeros([number_of_nodes, len(t)]),
                'R': np.zeros([number_of_nodes, len(t)])}
     for k, v in nodes.items():
-        results['S'][v][0] = g.nodes[v]['population']
+        results['S'][v, 0] = g.nodes[v]['population']
 
-    results['S'][nodes[starting_node]][0] -= I0
-    results['I'][nodes[starting_node]][0] = I0
+    results['S'][nodes[starting_node], 0] -= I0
+    results['I'][nodes[starting_node], 0] = I0
     dt = t[1] - t[0]
 
     for i, _ in enumerate(t[1:]):
@@ -92,7 +92,7 @@ if __name__ == "__main__":
     number_of_nodes = 10
 
     node = '1'
-    beta, mu = .08, 0.5
+    beta, mu = .008, 0.5
     R0 = beta / mu
     print(R0)
     print(R0 * number_of_nodes)
