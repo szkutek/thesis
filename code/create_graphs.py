@@ -22,9 +22,8 @@ def read_files(type):
 
 def create_pos(df):
     pts = df.loc[:, ('pt_x', 'pt_y')].apply(tuple, axis=1)
-    pos = dict(zip(df['teryt'], pts))
     df.loc[:, 'coord'] = pts
-    return pos
+    return dict(zip(df['teryt'], pts))
 
 
 def plot_bg():
@@ -35,7 +34,7 @@ def plot_bg():
     df_bg.plot(alpha=0.3, figsize=(10, 10))  # # df_bg.plot(column='name', cmap='GnBu')
 
 
-def add_population(G):
+def add_population(G, df):
     pop_df = pd.read_csv('../data/ludnosc/LUDN_2017.csv', delimiter=';', dtype={0: str})
     pop_df.rename(columns={'Kod': 'teryt',
                            'gminy bez miast na prawach powiatu;miejsce zamieszkania;stan na 31 XII;ogółem;2017;[osoba]':
@@ -47,6 +46,8 @@ def add_population(G):
     population = dict(zip(pop_df.loc[:, 'teryt'].tolist(), pop))
     nx.set_node_attributes(G, population, 'population')
 
+    df.loc[:, 'population'] = df.loc[:, 'teryt'].map(population)
+
 
 def add_work_migration(G):
     """adding weights to edges
@@ -57,9 +58,9 @@ def add_work_migration(G):
 
     def set_work_migration(G, e1, e2, w):
         if 'work' in G[e1][e2]:
-            G[e1][e2]['work'] += w
+            G[e1][e2]['commute'] += w
         else:
-            G[e1][e2]['work'] = w
+            G[e1][e2]['commute'] = w
 
     path = nx.shortest_path(G)  # source and target not specified
     errs = 0
@@ -73,7 +74,7 @@ def add_work_migration(G):
         pairs = list(zip(p[:-1], p[1:]))  # [(e1, e2), (e2, e3), ...]
         for p1, p2 in pairs:  # add work migration to edges in path p
             set_work_migration(G, p1, p2, w)
-    print(errs)
+    print('errors in work migration: ' + str(errs))
 
 
 def save_graph(G, pos, node_labels=False, edge_labels=False):
@@ -89,23 +90,25 @@ def save_graph(G, pos, node_labels=False, edge_labels=False):
     plt.show()
 
 
-def create_gminas_graph(pos, nbrs):
+def create_gminas_graph(pos, nbrs, df):
     G = nx.DiGraph()
     G.add_nodes_from(pos.keys())
     G.add_edges_from(nbrs)
-    add_population(G)
-    add_work_migration(G)
+    add_population(G, df)
+    # add_work_migration(G)
     return G
 
 
 def gminas_network():
     df, nbrs = read_files('gminas')
     pos = create_pos(df)  # {node: (pt_x, pt_y)}
-    G = create_gminas_graph(pos, nbrs)
-    return G, pos
+    G = create_gminas_graph(pos, nbrs, df)
+    return G, pos, df
 
 
 if __name__ == '__main__':
-    G, pos = gminas_network()
-    # save_graph(G, pos, True, True)
-    save_graph(G, pos)
+    G, pos, df = gminas_network()
+    # save_graph(G, pos)
+    print(list(G.nodes.data())[:3])
+    print(list(G.edges.data())[:3])
+    print(df.loc[:, 'teryt'].tolist())

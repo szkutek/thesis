@@ -1,70 +1,37 @@
 import matplotlib.pyplot as plt
 import networkx as nx
+import numpy as np
 
 import create_flight_connections
 import create_graphs
+import model.network_model
 
 
-def plot_two_networks(g, G1, pos1, G2, pos2, node_labels=False, edge_labels=False):
-    """
-    :param g: G1 and G2 combined
-    :param G1: graph for gminas
-    :param pos1: positions for gminas
-    :param G2: for airports
-    :param pos2: for airports
-    """
-    node_size = 50
-    create_graphs.plot_bg()
+def plot_epidemic_map(g):
+    # TODO add airport locations and connections between them
+    beta, mu = .08, 0.5
+    R0 = beta / mu
+    print(R0)
+    t = np.linspace(0, 5, 1001)  # time grid
+    nodes = {str(n): n for i, n in enumerate(g.nodes())}
 
-    # nx.draw_networkx_nodes(G1, pos=pos1, node_size=node_size, node_color='red', edge_color='k', alpha=.5,
-    #                        with_labels=False)
-    nx.draw_networkx_edges(G1, pos=pos1, edge_color='red', alpha=.3)
+    # results = model.network_model.sir_ode_on_network(g, nodes, starting_node='1465011', I0=1, beta=beta, mu=mu, t=t)
+    # results = np.array()
+    # for test_node in ['2403011', '2475011', '3262011']:
+    #     s, i, r = results['S'][nodes[test_node]], results['I'][nodes[test_node]], results['R'][nodes[test_node]]
+    #     model.network_model.plot_change_in_population('test4_' + str(test_node), t, s, i, r)
+    #
+    # gminas_df.loc[:, 'sir_t=']
+    gminas_df.plot(column='population', alpha=0.3, figsize=(10, 10))
 
-    # nx.draw_networkx_nodes(G2, pos=pos2, node_size=node_size, node_color='blue', edge_color='k', alpha=.5,
-    #                        with_labels=False)
-    nx.draw_networkx_edges(G2, pos=pos2, edge_color='blue', alpha=.3)
-    if node_labels:
-        nx.draw_networkx_labels(G1, pos=pos1, label_pos=0.5)
-        nx.draw_networkx_labels(G2, pos=pos2, label_pos=0.5)
-    if edge_labels:
-        nx.draw_networkx_edge_labels(G1, pos=pos1, label_pos=0.5)
-        nx.draw_networkx_edge_labels(G2, pos=pos2, label_pos=0.5)
-
-    plt.savefig('../data/graphs/two_networks.png')
-    plt.show()
-
-
-def plot_network(g, G1, pos1, G2, pos2, node_labels=False, edge_labels=False):
-    """
-    :param g: graph for gminas
-    :param pos1: positions for gminas
-    :param pos2: positions for airports
-    """
-    node_size = 50
-    create_graphs.plot_bg()
-
-    nx.draw_networkx_nodes(g, pos=pos1, node_size=node_size, node_color='red', edge_color='k', alpha=.5,
-                           with_labels=False)
-    nx.draw_networkx_edges(g, pos=pos1, edge_color='red', alpha=.3)
-
-    nx.draw_networkx_nodes(G2, pos=pos2, node_size=node_size, node_color='blue', edge_color='k', alpha=.5,
-                           with_labels=False)
-    nx.draw_networkx_edges(G2, pos=pos2, edge_color='blue', alpha=.3)
-    if node_labels:
-        nx.draw_networkx_labels(g, pos=pos1, label_pos=0.5)
-        nx.draw_networkx_labels(g, pos=pos2, label_pos=0.5)
-    if edge_labels:
-        nx.draw_networkx_edge_labels(g, pos=pos1, label_pos=0.5)
-        nx.draw_networkx_edge_labels(g, pos=pos2, label_pos=0.5)
-
-    plt.savefig('../data/graphs/two_networks.png')
+    plt.savefig('../data/graphs/epidemic_spread.png')
     plt.show()
 
 
 if __name__ == '__main__':
-    gminas, gminas_pos = create_graphs.gminas_network()
+    gminas, gminas_pos, gminas_df = create_graphs.gminas_network()
     flights, flights_pos = create_flight_connections.flights_network()
 
     G = nx.compose(gminas, flights)
 
-    plot_two_networks(G, gminas, gminas_pos, flights, flights_pos, False, False)
+    plot_epidemic_map(G)
