@@ -3,6 +3,11 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 
+"""
+Contains necessary functions to simulate spreading of an epidemic on a random graph 
+and present results for chosen nodes in simple plots.   
+"""
+
 
 def plot_change_in_population(filename, t, S, I, R=None):
     plt.figure()
