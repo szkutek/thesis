@@ -58,6 +58,7 @@ def sir_model_on_node(g, nodes, results, node, i, dt, beta, mu):
 
 def sir_ode_on_network(g, nodes, starting_node, I0, t, beta, mu):
     # initialize SIR
+    number_of_nodes = len(nodes)
     results = {'S': np.zeros([number_of_nodes, len(t)]),
                'I': np.zeros([number_of_nodes, len(t)]),
                'R': np.zeros([number_of_nodes, len(t)])}
