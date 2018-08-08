@@ -44,6 +44,8 @@ def add_population(G, df):
                   inplace=True)
     pop = pop_df.loc[:, ('pop_no_cities', 'pop_cities')].apply(sum, axis=1).tolist()
     population = dict(zip(pop_df.loc[:, 'teryt'].tolist(), pop))
+    print(len(pop))
+    print(len(population))
     nx.set_node_attributes(G, population, 'population')
 
     df.loc[:, 'population'] = df.loc[:, 'teryt'].map(population)
