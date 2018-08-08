@@ -73,7 +73,7 @@ def create_pos_for_shp(df):
     return pos
 
 
-def save_graph(G, node_labels=False, edge_labels=False):
+def save_graph(G, pos, node_labels=False, edge_labels=False):
     nx.draw_networkx_nodes(G, pos=pos, node_size=100, node_color='red', edge_color='k', alpha=.5,
                            with_labels=False)
     nx.draw_networkx_edges(G, pos=pos, edge_color='red', alpha=.3)
@@ -85,23 +85,26 @@ def save_graph(G, node_labels=False, edge_labels=False):
     plt.show()
 
 
-def create_airports_graph(pos):
-    airports = nx.DiGraph()
-    airports.add_nodes_from(pos.keys())
+def create_airports_graph(df, pos):
     number_of_passengers = 70
+    pos = {df.loc[k, 'teryt']: v for k, v in pos.items()}
     flights = {('WAW', 'WRO'): 6, ('WAW', 'KTW'): 2, ('WAW', 'POZ'): 1, ('WAW', 'RZE'): 4,
                ('WAW', 'SZZ'): 4, ('WAW', 'IEG'): 1, ('GDN', 'WRO'): 0.5, ('WAW', 'KRK'): 2,
                ('WAW', 'GDN'): 3}
+    flights = {(df.loc[k[0], 'teryt'], df.loc[k[1], 'teryt']): v for k, v in flights.items()}
     edges = [(k[0], k[1], flights_per_day * number_of_passengers) for k, flights_per_day in flights.items()]
     edges += [(k[1], k[0], flights_per_day * number_of_passengers) for k, flights_per_day in flights.items()]
-    airports.add_weighted_edges_from(edges)
-    return airports
+
+    airports = nx.DiGraph()
+    airports.add_nodes_from(pos.keys())
+    airports.add_weighted_edges_from(edges, weight='commute')
+    return airports, pos
 
 
 def flights_network():
     df = read_airports()
     pos = create_pos_for_shp(df)
-    G = create_airports_graph(pos)
+    G, pos = create_airports_graph(df, pos)
     return G, pos
 
 
@@ -109,5 +112,5 @@ if __name__ == '__main__':
     df = read_airports(create=False)
     # print(df)
     pos = create_pos_for_shp(df)
-    G = create_airports_graph(pos)
-    save_graph(G, True, True)
+    G, pos = create_airports_graph(df, pos)
+    save_graph(G, pos, True, True)
