@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import pandas as pd
 import geopandas as gpd
+import networkx.readwrite.gpickle as pickle
 
 
 def find_gmina_in_voiv(gmina, voiv, gminas_df, voiv_df):
@@ -69,6 +70,7 @@ def read_airports(create=False):
 def create_pos_for_shp(df):
     pts = df.loc[:, ('coord_x', 'coord_y')].apply(tuple, axis=1)  # for folium replace y and x
     pos = dict(zip(df['IATA'], pts))
+    pos = {df.loc[k, 'teryt']: v for k, v in pos.items()}
     df.loc[:, 'coords'] = pts
     return pos
 
@@ -87,24 +89,29 @@ def save_graph(G, pos, node_labels=False, edge_labels=False):
 
 def create_airports_graph(df, pos):
     number_of_passengers = 70
-    pos = {df.loc[k, 'teryt']: v for k, v in pos.items()}
     flights = {('WAW', 'WRO'): 6, ('WAW', 'KTW'): 2, ('WAW', 'POZ'): 1, ('WAW', 'RZE'): 4,
                ('WAW', 'SZZ'): 4, ('WAW', 'IEG'): 1, ('GDN', 'WRO'): 0.5, ('WAW', 'KRK'): 2,
                ('WAW', 'GDN'): 3}
     flights = {(df.loc[k[0], 'teryt'], df.loc[k[1], 'teryt']): v for k, v in flights.items()}
     edges = [(k[0], k[1], flights_per_day * number_of_passengers) for k, flights_per_day in flights.items()]
-    edges += [(k[1], k[0], flights_per_day * number_of_passengers) for k, flights_per_day in flights.items()]
+    # for DiGraph:
+    # edges += [(k[1], k[0], flights_per_day * number_of_passengers) for k, flights_per_day in flights.items()]
 
-    airports = nx.DiGraph()
+    airports = nx.Graph()
     airports.add_nodes_from(pos.keys())
     airports.add_weighted_edges_from(edges, weight='commute')
-    return airports, pos
+    return airports
 
 
-def flights_network():
+def flights_network(create=False):
+    path = '../data/pickled_graphs/flights.pkl'
     df = read_airports()
     pos = create_pos_for_shp(df)
-    G, pos = create_airports_graph(df, pos)
+    if create:
+        G = create_airports_graph(df, pos)
+        pickle.write_gpickle(G, path)
+    else:
+        G = pickle.read_gpickle(path)
     return G, pos
 
 
