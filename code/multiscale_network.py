@@ -14,8 +14,11 @@ def plot_epidemic_map(g):
     t = np.linspace(0, 5, 1001)  # time grid
     nodes = {str(n): i for i, n in enumerate(g.nodes())}
     starting_node = '1465011'
-    results = network_sir_model.sir_ode_on_network(g, nodes,
-                                                   starting_node=starting_node, I0=1, beta=beta, mu=mu, t=t)
+    # results = network_sir_model.sir_ode_on_network(g, nodes,
+    #                                                starting_node=starting_node, I0=1, beta=beta, mu=mu, t=t)
+    results = {'S': np.random.rand(len(nodes), len(t)),
+               'I': np.random.rand(len(nodes), len(t)),
+               'R': np.random.rand(len(nodes), len(t))}
 
     for test_node in ['2403011', '2475011', '3262011']:
         s, i, r = results['S'][nodes[test_node]], results['I'][nodes[test_node]], results['R'][nodes[test_node]]
@@ -33,16 +36,16 @@ def plot_epidemic_map(g):
     gminas_df.loc[[starting_node], ['geometry', col]].plot(column=col, alpha=0.8, cmap='RdYlGn_r',
                                                            ax=map, edgecolor='black', linewidth=2)
     # plot airline connections
-    nx.draw_networkx_edges(flights, flights_pos, edge_color='blue', width=0.5, alpha=1., ax=map)
+    nx.draw_networkx_edges(flights, flights_pos, edge_color='blue', width=0.5, alpha=.8, ax=map)
 
-    plt.savefig('../data/graphs/epidemic_spread.png')
+    plt.savefig('../data/graphs/epidemic_spread.eps', format='eps')
     # plt.show()
 
 
 if __name__ == '__main__':
     # TODO uncomment add_work_migration in create_graphs.gminas_network()
-    gminas, gminas_pos, gminas_df = create_graphs.gminas_network()
-    flights, flights_pos = create_flight_connections.flights_network()
+    gminas, gminas_pos, gminas_df = create_graphs.gminas_network(create=True)
+    flights, flights_pos = create_flight_connections.flights_network(create=True)
 
     G = nx.compose(gminas, flights)
 
