@@ -3,6 +3,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import pandas as pd
 import geopandas as gpd
+import networkx.readwrite.gpickle as pickle
 
 
 def read_files(type):
@@ -44,10 +45,19 @@ def add_population(G, df):
                   inplace=True)
     pop = pop_df.loc[:, ('pop_no_cities', 'pop_cities')].apply(sum, axis=1).tolist()
     population = dict(zip(pop_df.loc[:, 'teryt'].tolist(), pop))
-    print(len(pop))
-    print(len(population))
-    nx.set_node_attributes(G, population, 'population')
 
+    # rows with NaN population - added manually from polskawliczbach.pl
+    # df.loc[:, 'population'] = df.loc[:, 'teryt'].map(population)
+    # print(df[df['population'].isnull()].loc[:, 'teryt'].tolist())
+    nan_population = {'0265011': 115453, '0202033': 9416, '0612023': 6743, '0603113': 6969, '0603153': 6596,
+                      '0618053': 6444, '0607083': 8773, '0605063': 7088, '0804073': 6892, '1404043': 6217,
+                      '1412123': 8743, '1609123': 5257, '1818053': 8675, '2213013': 3264, '2211023': 3824,
+                      '2211043': 15467, '2601083': 5611, '2604073': 6954, '2601063': 7744, '2605043': 9044,
+                      '2604123': 15801, '3020013': 4764, '3006013': 8346, '3007083': 10850, '3020033': 8253,
+                      '3209053': 5006, '3204073': 4931}
+    population.update(nan_population)
+
+    nx.set_node_attributes(G, population, 'population')
     df.loc[:, 'population'] = df.loc[:, 'teryt'].map(population)
 
 
@@ -57,12 +67,6 @@ def add_work_migration(G):
     work_migration = pd.read_csv('../data/l_macierz_2014_03_18.csv', delimiter=';', dtype={0: str, 1: str})
     work_migration = work_migration.loc[:, work_migration.columns[:3]]
     work_migration = work_migration.apply(tuple, axis=1).tolist()
-
-    def set_work_migration(G, e1, e2, w):
-        if 'work' in G[e1][e2]:
-            G[e1][e2]['commute'] += w
-        else:
-            G[e1][e2]['commute'] = w
 
     path = nx.shortest_path(G)  # source and target not specified
     errs = 0
@@ -75,7 +79,8 @@ def add_work_migration(G):
             p = []
         pairs = list(zip(p[:-1], p[1:]))  # [(e1, e2), (e2, e3), ...]
         for p1, p2 in pairs:  # add work migration to edges in path p
-            set_work_migration(G, p1, p2, w)
+            G[p1][p2]['commute'] += w
+
     print('errors in work migration: ' + str(errs))
 
 
@@ -93,18 +98,24 @@ def save_graph(G, pos, node_labels=False, edge_labels=False):
 
 
 def create_gminas_graph(pos, nbrs, df):
-    G = nx.DiGraph()
+    G = nx.Graph()
     G.add_nodes_from(pos.keys())
-    G.add_edges_from(nbrs)
+    nbrs = [(n1, n2, 0) for n1, n2 in nbrs]
+    G.add_weighted_edges_from(nbrs, 'commute')
     add_population(G, df)
-    # add_work_migration(G)
+    add_work_migration(G)
     return G
 
 
-def gminas_network():
+def gminas_network(create=False):
+    path = '../data/pickled_graphs/gminas.pkl'
     df, nbrs = read_files('gminas')
     pos = create_pos(df)  # {node: (pt_x, pt_y)}
-    G = create_gminas_graph(pos, nbrs, df)
+    if create:
+        G = create_gminas_graph(pos, nbrs, df)
+        pickle.write_gpickle(G, path)
+    else:
+        G = pickle.read_gpickle(path)
     return G, pos, df
 
 
