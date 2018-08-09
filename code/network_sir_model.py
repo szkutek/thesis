@@ -38,12 +38,13 @@ def sir_model_on_node(g, nodes, results, node, i, dt, beta, mu):
     nbrs = [*nx.neighbors(g, node)]
     infection_from_nbrs = 0.
 
-    edge_data_dict = {(n1, n2): w for n1, n2, w in g.edges.data('commute') if w is not None}
+    # edge_data_dict = {(n1, n2): w for n1, n2, w in g.edges.data('commute') if w is not None}
     for nbr in nbrs:
-        if (node, nbr) in edge_data_dict:
-            infection_from_nbrs += edge_data_dict[(node, nbr)] \
-                                   * results['I'][nodes[nbr], i - 1] \
-                                   / g.nodes[nbr]['population']
+        # if (node, nbr) in edge_data_dict:
+        # infection_from_nbrs += edge_data_dict[(node, nbr)] \
+        infection_from_nbrs += g.edges.data('commute')[(node, nbr)] \
+                               * results['I'][nodes[nbr], i - 1] \
+                               / g.nodes[nbr]['population']
 
     y = np.array([results['S'][nodes[node]][i - 1], results['I'][nodes[node]][i - 1], results['R'][nodes[node]][i - 1]])
 
