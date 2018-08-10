@@ -71,17 +71,29 @@ def add_work_migration(G):
     path = nx.shortest_path(G)  # source and target not specified
     errs = 0
     for e1, e2, w in work_migration:
-        # TODO fix key error in path
+        # fixed key error in path - changed the last number in teryt so that teryt exists
+        # works for Graph, but not for DiGraph
+        if e1 not in path:
+            for i in ['1', '2', '3', '4', '5', '8', '9']:
+                if e1[:-1] + i in path:
+                    e1 = e1[:-1] + i
+                    break
+        if e2 not in path:
+            for i in ['1', '2', '3', '4', '5', '8', '9']:
+                if e2[:-1] + i in path:
+                    e2 = e2[:-1] + i
+                    break
         try:
             p = path[e1][e2]  # [e1, e2, e3, ..., en]
         except:
             errs += 1
             p = []
+            print(e1, e2)
         pairs = list(zip(p[:-1], p[1:]))  # [(e1, e2), (e2, e3), ...]
         for p1, p2 in pairs:  # add work migration to edges in path p
             G[p1][p2]['commute'] += w
 
-    print('errors in work migration: ' + str(errs))
+    # print('errors in work migration: ' + str(errs))
 
 
 def save_graph(G, pos, node_labels=False, edge_labels=False):
