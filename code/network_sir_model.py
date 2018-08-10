@@ -14,8 +14,6 @@ Then we can plot the results using GeoDataFrame with added column for the time t
 (defined in multiscale_network.py).  
 """
 
-errs = 0
-
 
 def plot_change_in_population(filename, t, S, I, R=None):
     plt.figure()
@@ -46,6 +44,10 @@ def sir_model_on_node(g, results, index, node, i, dt, beta, mu):
 
     y = np.array([results['S'][index, i - 1], results['I'][index, i - 1], results['R'][index, i - 1]])
 
+    # if infection_from_nbrs != 0:
+    #     print(infection_from_nbrs)
+    #     print(y)
+
     def f(u):
         Si, Ii, Ri = u
         dS_dt = - beta * Si * Ii - beta * Si * infection_from_nbrs
@@ -56,13 +58,15 @@ def sir_model_on_node(g, results, index, node, i, dt, beta, mu):
     # # Euler method
     # y += f(y) * dt
 
-    # # Runge-Kutta method of 4th order
+    # # Runge-Kutta method of 4th order TEŻ GÓWNO
     k1 = f(y)
     k2 = f(y + dt * k1 / 2.)
     k3 = f(y + dt * k2 / 2.)
     k4 = f(y + dt * k3)
     y += dt / 6. * (k1 + 2. * k2 + 2. * k3 + k4)
 
+    # if infection_from_nbrs != 0:
+    #     print(y)
     results['S'][index, i], results['I'][index, i], results['R'][index, i] = y
     return
 

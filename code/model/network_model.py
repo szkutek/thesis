@@ -26,17 +26,13 @@ def plot_change_in_population(filename, t, S, I, R=None):
     plt.savefig(filename + '.png')
 
 
-def sir_model_on_node(g, nodes, results, node, i, dt, beta, mu):
-    N = g.nodes[node]['population']
+def sir_model_on_node(g, results, node, i, dt, beta, mu):
     nbrs = [*nx.neighbors(g, node)]
     infection_from_nbrs = 0.
     for nbr in nbrs:
-        # infection_from_nbrs += g.get_edge_data(node, nbr)['commute'] * results['I'][nodes[nbr]][i - 1] \
-        #                        / g.nodes[nbr]['population']
         infection_from_nbrs += g.get_edge_data(node, nbr)['commute'] * results['I'][nbr, i - 1] \
                                / g.nodes[nbr]['population']
 
-    # y = np.array([results['S'][nodes[node]][i - 1], results['I'][nodes[node]][i - 1], results['R'][nodes[node]][i - 1]])
     y = np.array([results['S'][node, i - 1], results['I'][node, i - 1], results['R'][node, i - 1]])
 
     def f(u):
@@ -61,23 +57,22 @@ def sir_model_on_node(g, nodes, results, node, i, dt, beta, mu):
     return
 
 
-def sir_ode_on_network(g, nodes, starting_node, I0, t, beta, mu):
+def sir_ode_on_network(g, number_of_nodes, starting_node, I0, t, beta, mu):
     # initialize SIR
-    number_of_nodes = len(nodes)
     results = {'S': np.zeros([number_of_nodes, len(t)]),
                'I': np.zeros([number_of_nodes, len(t)]),
                'R': np.zeros([number_of_nodes, len(t)])}
-    for k, v in nodes.items():
+    for v in range(number_of_nodes):
         results['S'][v, 0] = g.nodes[v]['population']
 
-    results['S'][nodes[starting_node], 0] -= I0
-    results['I'][nodes[starting_node], 0] = I0
+    results['S'][starting_node, 0] -= I0
+    results['I'][starting_node, 0] = I0
     dt = t[1] - t[0]
 
     for i, _ in enumerate(t[1:]):
         for node in g.nodes:
             # TODO simultaneous calculations
-            sir_model_on_node(g, nodes, results, node, i + 1, dt, beta, mu)
+            sir_model_on_node(g, results, node, i + 1, dt, beta, mu)
     return results
 
 
@@ -95,22 +90,19 @@ def create_graph(t, number_of_nodes):
 
 
 if __name__ == "__main__":
-    number_of_nodes = 10
+    number_of_nodes = 100
 
-    node = '1'
+    node = 1
     beta, mu = .008, 0.5
     R0 = beta / mu
     print(R0)
     print(R0 * number_of_nodes)
-    t = np.linspace(0, 5, 1001)  # time grid
+    t = np.linspace(0, 10, 10001)  # time grid
 
     g = create_graph(t, number_of_nodes)
-    nodes = {str(n): n for i, n in enumerate(g.nodes())}
-    print(nodes)
 
-    res = sir_ode_on_network(g, nodes, node, 1, t, beta, mu)
+    res = sir_ode_on_network(g, number_of_nodes, node, 1, t, beta, mu)
 
     for test_node in [1, 2, 3]:
-        # s, i, r = results['S'][nodes[test_node]], results['I'][nodes[test_node]], results['R'][nodes[test_node]]
         s, i, r = res['S'][test_node], res['I'][test_node], res['R'][test_node]
-        plot_change_in_population('test3_' + str(test_node), t, s, i, r)
+        plot_change_in_population('test2_' + str(test_node), t, s, i, r)
