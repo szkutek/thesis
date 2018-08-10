@@ -6,19 +6,33 @@ import create_flight_connections
 import create_graphs
 import network_sir_model
 
+from timeit import default_timer as timer
 
-def plot_epidemic_map(g):
+
+def calculate_results(g):
+    beta, mu = .008, 0.5
+    R0 = beta / mu
+    # print(R0)
+    t = np.linspace(0, 10, 1001)  # time grid
+    nodes = {str(n): i for i, n in enumerate(g.nodes())}
+    starting_node = '1465011'
+    results = network_sir_model.sir_ode_on_network(g, nodes,
+                                                   starting_node=starting_node, I0=1, beta=beta, mu=mu, t=t)
+    print('errors:')
+    print(network_sir_model.errs)
+    return results
+
+
+def plot_epidemic_map(results):
     beta, mu = .008, 0.5
     R0 = beta / mu
     # print(R0)
     t = np.linspace(0, 5, 1001)  # time grid
     nodes = {str(n): i for i, n in enumerate(g.nodes())}
     starting_node = '1465011'
-    # results = network_sir_model.sir_ode_on_network(g, nodes,
-    #                                                starting_node=starting_node, I0=1, beta=beta, mu=mu, t=t)
-    results = {'S': np.random.rand(len(nodes), len(t)),
-               'I': np.random.rand(len(nodes), len(t)),
-               'R': np.random.rand(len(nodes), len(t))}
+    # results = {'S': np.random.rand(len(nodes), len(t)),
+    #            'I': np.random.rand(len(nodes), len(t)),
+    #            'R': np.random.rand(len(nodes), len(t))}
 
     for test_node in ['2403011', '2475011', '3262011']:
         s, i, r = results['S'][nodes[test_node]], results['I'][nodes[test_node]], results['R'][nodes[test_node]]
@@ -44,9 +58,14 @@ def plot_epidemic_map(g):
 
 if __name__ == '__main__':
     # TODO uncomment add_work_migration in create_graphs.gminas_network()
-    gminas, gminas_pos, gminas_df = create_graphs.gminas_network(create=True)
-    flights, flights_pos = create_flight_connections.flights_network(create=True)
+    gminas, gminas_pos, gminas_df = create_graphs.gminas_network(create=False)
+    flights, flights_pos = create_flight_connections.flights_network(create=False)
 
     G = nx.compose(gminas, flights)
 
-    plot_epidemic_map(G)
+    start = timer()
+    res = calculate_results(G)
+    stop = timer()
+    print(stop - start)
+
+    # plot_epidemic_map(G)

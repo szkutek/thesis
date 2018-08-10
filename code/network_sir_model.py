@@ -14,6 +14,8 @@ Then we can plot the results using GeoDataFrame with added column for the time t
 (defined in multiscale_network.py).  
 """
 
+errs = 0
+
 
 def plot_change_in_population(filename, t, S, I, R=None):
     plt.figure()
@@ -33,18 +35,17 @@ def plot_change_in_population(filename, t, S, I, R=None):
 
 
 def sir_model_on_node(g, nodes, results, node, i, dt, beta, mu):
-    # TODO debug population (not every node has this attribute?)
-    N = g.nodes[node]['population']
+    global errs
     nbrs = [*nx.neighbors(g, node)]
     infection_from_nbrs = 0.
 
-    # edge_data_dict = {(n1, n2): w for n1, n2, w in g.edges.data('commute') if w is not None}
+    edge_data_dict = {(n1, n2): w for n1, n2, w in g.edges.data('commute')}
     for nbr in nbrs:
-        # if (node, nbr) in edge_data_dict:
-        # infection_from_nbrs += edge_data_dict[(node, nbr)] \
-        infection_from_nbrs += g.edges.data('commute')[(node, nbr)] \
-                               * results['I'][nodes[nbr], i - 1] \
-                               / g.nodes[nbr]['population']
+        if (node, nbr) in edge_data_dict:
+            infection_from_nbrs += edge_data_dict[(node, nbr)] * results['I'][nodes[nbr], i - 1] / g.nodes[nbr][
+                'population']
+        else:
+            errs += 1
 
     y = np.array([results['S'][nodes[node]][i - 1], results['I'][nodes[node]][i - 1], results['R'][nodes[node]][i - 1]])
 
@@ -76,8 +77,7 @@ def sir_ode_on_network(g, nodes, starting_node, I0, t, beta, mu):
                'I': np.zeros([number_of_nodes, len(t)]),
                'R': np.zeros([number_of_nodes, len(t)])}
     population_dict = dict(g.nodes.data('population'))
-    print(number_of_nodes)
-    print(len(population_dict))
+
     for k, v in nodes.items():
         results['S'][v, 0] = population_dict[k]
 
@@ -86,6 +86,7 @@ def sir_ode_on_network(g, nodes, starting_node, I0, t, beta, mu):
     dt = t[1] - t[0]
 
     for i, _ in enumerate(t[1:]):
+        print('i = ' + str(i))
         for node in g.nodes:
             # TODO simultaneous calculations
             sir_model_on_node(g, nodes, results, node, i + 1, dt, beta, mu)
