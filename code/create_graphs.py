@@ -3,7 +3,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import pandas as pd
 import geopandas as gpd
-import networkx.readwrite.gpickle as pickle
+import networkx.readwrite.gpickle as gpickle
 
 
 def read_files(type):
@@ -120,14 +120,16 @@ def create_gminas_graph(pos, nbrs, df):
 
 
 def gminas_network(create=False):
-    path = '../data/pickled_graphs/gminas.pkl'
+    path = '../data/pickled_graphs/gminas_'
     df, nbrs = read_files('gminas')
     pos = create_pos(df)  # {node: (pt_x, pt_y)}
     if create:
         G = create_gminas_graph(pos, nbrs, df)
-        pickle.write_gpickle(G, path)
+        gpickle.write_gpickle(G, path + 'graph.pkl')
+        df.to_pickle(path + 'df.pkl')
     else:
-        G = pickle.read_gpickle(path)
+        G = gpickle.read_gpickle(path + 'graph.pkl')
+        df = pd.read_pickle(path + 'df.pkl')
     return G, pos, df
 
 
@@ -137,3 +139,4 @@ if __name__ == '__main__':
     print(list(G.nodes.data())[:3])
     print(list(G.edges.data())[:3])
     print(df.loc[:, 'teryt'].tolist())
+    print(df.head())
